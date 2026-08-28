@@ -159,3 +159,9 @@ Flag it if anything in this file seems to contradict the global agreement in som
   its own new commit (or several). Do not fold new work into an existing commit.
 - **A branch reaches `main` only with my explicit approval.** Push the branch, tell me
   what is on it, then wait. Do not merge or open-and-merge a PR on your own.
+- **Open a PR for every branch, with a real description.** There is no CI on this
+  project, so the PR body is the only review artifact. It must state: what changed and
+  why, how it was tested, the actual results (paste real output, not a summary), and
+  any known limitations or follow-ups. Open the PR as soon as the branch is pushed —
+  do not wait to be asked. Opening a PR is not merging; the approval rule above still
+  applies.
