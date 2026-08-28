@@ -600,11 +600,111 @@ budget stops retrying when attempts are slow.
 
 ---
 
-## Slice 4 — Authentication (not started)
+## Slice 4 — Authentication
 
-Planned: `AuthModal` with signup and login, `currentUser` in LocalStorage read via a lazy
-`useState` initialiser, `handleStartFlow` gating, and `handleAuthSuccess` consuming
-`pendingPage`.
+**Done means:** sign up, get redirected to the page you were heading for, with the form
+pre-filled.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `src/auth.js` | Register, login, sign out, and the LocalStorage reads |
+| `src/components/AuthModal.jsx` | One dialog, sign-up and login modes |
+| `src/App.jsx` | `handleStartFlow` gates the flow; `handleAuthSuccess` consumes `pendingPage` |
+
+Storage keys match the spec's DevTools screenshot exactly: `registered_users` holds the
+accounts, `user` holds the current session.
+
+| Decision | Why |
+|---|---|
+| Pre-fill only blank fields | Signing in midway through the form must not overwrite what was typed |
+| One message for unknown email and wrong password | Otherwise the form reveals which emails are registered |
+| Email matched case- and space-insensitively | `ANANYA@…` and ` ananya@… ` are one account to a person |
+| Every LocalStorage access in try/catch | It throws in private browsing; the app must still render |
+
+### This is not real authentication
+
+Accounts live in the visitor's own browser under `registered_users`, **passwords in plain
+text**. Anyone can open DevTools, read every account, and sign in as any of them. There is
+no server, no session, no hashing.
+
+Hashing would be theatre here: the whole store is client-side, so anyone who can read a
+hash can also edit the record. The spec asks for exactly this, and for a capstone it is
+the right scope — what matters is that the README says so in a paragraph rather than
+leaving someone to discover it.
+
+### Result
+
+```
+client:  Tests 47 passed (47)
+server:  ℹ pass 29
+```
+
+Live in Chrome: **TC03** — signed out, "Get Started" opened the modal in Sign Up mode and
+the page did not move. **TC02** — completing signup landed on the form with Full Name and
+Email already filled.
+
+LocalStorage after signup, read from the page:
+
+```json
+{
+  "registered_users": [
+    { "name": "Ananya Iyer", "email": "ananya.iyer@example.in", "password": "kirana123" }
+  ],
+  "user": { "name": "Ananya Iyer", "email": "ananya.iyer@example.in", "password": "kirana123" }
+}
+```
+
+### Two things found while building it
+
+**Node 26 defines its own `localStorage` global** that shadows jsdom's and throws unless
+the process was started with `--localstorage-file`. Every auth test failed on it until the
+setup installed an in-memory store.
+
+**A test caught the required-phone rule.** The template-choice test could not reach the
+preview, because Phone Number became required in slice 3.5 and the form correctly refused
+to submit. The test was wrong, not the app.
+
+---
+
+## Slice 5 — Two templates and the portfolio
+
+**Done means:** the templates look genuinely different, and the portfolio is worth sharing.
+
+### What was built
+
+Modern is a two-column grid with an accent rule under each heading; Classic is one centred
+serif column. They render **identical markup** — everything separating them lives under
+`.resume--modern` / `.resume--classic`, so a third template is a block of CSS rather than
+another component.
+
+The portfolio gets the four sections the spec names — About Me, Skills, Projects,
+Achievements — over a gradient hero. It reads the same generated object the resume does,
+so moving between them never costs another Gemini call, which a test asserts.
+
+`TEMPLATES` moved into `src/templates.js` so the landing gallery and the preview switcher
+cannot drift apart.
+
+### Result
+
+```
+Tests 50 passed (50)
+```
+
+Verified in Chrome with a real Gemini call: landing, loading state, Modern, Classic, and
+the portfolio. Switching Modern → Classic re-rendered instantly with no second call.
+
+### Two bugs found by using it
+
+**A returning user got an empty form.** Pre-filling only happened in `handleAuthSuccess`,
+which someone already signed in never passes through. `formData` is now seeded from the
+stored user at mount too. Every existing test signed in fresh, so none could have caught it.
+
+**The portfolio hero rendered sideways.** A bare `header { display: flex }` rule for the
+app bar also matched `.portfolio__hero`, which is a `<header>` too, flexing the badge,
+heading, tagline and email into one unreadable row. The tests passed the whole time,
+because they assert on content and not on layout.
 
 ---
 
@@ -681,6 +781,25 @@ where it happens rather than in a troubleshooting section.
 
 ---
 
+## Slice 7 — The six-step wizard
+
+**Done means:** the form matches the spec's screenshots — a stepper with a progress bar,
+Next/Previous, and per-step validation.
+
+### What was built
+
+`ResumeForm` becomes a wizard over the same six sections: Personal, Education, Skills,
+Projects, Experience, Certifications. `EMPTY_FORM` and every transform in `formUpdates.js`
+are untouched — this is a change to how the fields are presented, not to the data.
+
+| Decision | Why |
+|---|---|
+| Next and Generate are both `submit` | The browser then validates the current step's required fields for free. Doing it by hand means reimplementing what the platform already does |
+| Progress is `stepIndex / 6` | Step 1 reads 0%, step 6 reads 83%, matching the spec's screenshots exactly |
+| Only completed steps are clickable | Jumping ahead would skip the required fields on Personal |
+| Optional steps say so | "Nothing added yet. This step is optional." — otherwise an empty step looks broken |
+| Legend is visually hidden | A two-line `<legend>` breaks the fieldset's border cutout; the visible heading is a normal block and the legend stays for screen readers |
+
 ## Slice 8 — The fuller resume
 
 **Done means:** the resume shows the sections the spec's screenshots show, from one
@@ -738,6 +857,10 @@ wrong.
 ### How it was tested
 
 ```bash
+npm test
+npm run build
+npm run dev     # then clicked all six steps in Chrome
+
 npm --prefix server test
 npm test
 npm run dev     # then a real generation in Chrome
@@ -746,6 +869,33 @@ npm run dev     # then a real generation in Chrome
 ### Result
 
 ```
+Tests  56 passed (56)
+build  ✓ built in 59ms
+```
+
+In the browser:
+
+| Step | Observed |
+|---|---|
+| 1 | "Step 1 / 6 — Personal", **0%**, dot 1 filled, Next shown, Generate absent |
+| Next with Phone empty | **Did not advance** — the browser focused the empty required field |
+| 6 | "Step 6 / 6 — Certifications", **83%**, ticks on steps 1–5, **Generate Resume** |
+
+New tests: starts at step 1 and 0%; will not advance while a required field is empty
+(TC06, now enforced per step rather than only at the end); advances once filled; reaches
+83% on the last step where Next becomes Generate; Previous keeps what was entered; step 1
+Previous leaves the form; a step not yet reached is disabled.
+
+The existing form tests were rewritten around a `goTo(step)` helper, since fields that
+used to be on one page are now spread across six.
+
+### Known limitations
+
+- Progress counts steps visited, not fields completed, so skipping optional steps still
+  shows 83% at the end.
+- No draft persistence: a refresh mid-wizard loses everything, same as before.
+- The step dots are small tap targets on a phone.
+
 server:  ℹ tests 36   ℹ pass 36   ℹ fail 0
 client:  Tests 50 passed (50)
 ```
