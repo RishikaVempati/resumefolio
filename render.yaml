@@ -1,0 +1,25 @@
+# Backend only. The frontend deploys to Vercel from the repo root.
+services:
+  - type: web
+    name: auto-resume-portfolio-builder-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # Set in the Render dashboard, never committed.
+      - key: GEMINI_API_KEY
+        sync: false
+      # The spec names gemini-1.5-flash, which 404s on a current key.
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      # The deployed Vercel origin, added to the CORS allow-list.
+      # Set this only after the frontend exists.
+      - key: CLIENT_ORIGIN
+        sync: false
+# PORT is deliberately not set. Render injects its own and probes it; overriding
+# it means the app listens on one port while the platform expects another.
+# server/index.js already reads process.env.PORT and falls back to 3001 locally.

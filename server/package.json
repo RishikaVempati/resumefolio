@@ -1,11 +1,11 @@
 {
-  "name": "server",
+  "name": "ai-resume-builder-server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "node --watch index.js",
     "start": "node index.js",
-    "test": "node --test \"routes/*.test.js\""
+    "test": "node --test \"routes/*.test.js\" \"*.test.js\""
   },
   "type": "module",
   "dependencies": {
@@ -13,5 +13,9 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
+  },
+  "description": "Express backend for the Auto Resume + Portfolio Builder",
+  "engines": {
+    "node": ">=20"
   }
 }
