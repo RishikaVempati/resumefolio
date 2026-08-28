@@ -167,8 +167,93 @@ Commit: `3b4ff82`, branch `slice-0-scaffold`, PR #3 — awaiting review.
 
 ---
 
-## Slice 1 — Page state machine (not started)
+## Slice 1 — Page state machine
 
-Planned: `EMPTY_FORM` exported from `App.jsx`, and a `page` state variable driving
-`home` / `form` / `preview` / `portfolio`, with `handleStartFlow`, `handleAuthSuccess`,
-`handleSelectTemplate`, and `pendingPage`.
+**Done means:** click through home → form → preview → portfolio, with the form data
+object carried along.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `client/src/App.jsx` | `EMPTY_FORM`, the `page` state machine, and the handlers that move between views |
+| `client/src/pages/Home.jsx` | Landing page: "Get Started" and the template gallery |
+| `client/src/pages/ResumeForm.jsx` | Placeholder; the six real sections are slice 2 |
+| `client/src/pages/ResumePreview.jsx` | Placeholder; the Gemini content is slice 3 |
+| `client/src/pages/PortfolioPreview.jsx` | Placeholder; the real sections are slice 5 |
+
+`EMPTY_FORM` is the whole point of this slice. Every page reads from one shape, so a
+field renamed here is renamed everywhere:
+
+```
+personal:         name, email, phone, location, title, links
+education[]:      institution, degree, field, dates, grade
+skills[]:         strings
+projects[]:       name, description, tech, link          ← dynamic
+experience[]:     role, company, dates, highlights[]     ← dynamic
+certifications[]: name, issuer, date                     ← dynamic
+```
+
+Per-entry shapes are exported alongside it (`EMPTY_PROJECT`, `EMPTY_EXPERIENCE`,
+`EMPTY_EDUCATION`, `EMPTY_CERTIFICATION`) so slice 2's add-entry buttons have something
+to push.
+
+The four pages are deliberately unstyled placeholders that dump the shared object as
+JSON. This slice proves the plumbing; making them look like anything is slices 2, 3 and 5.
+
+**Deferred honestly:** `handleStartFlow` currently stores `pendingPage` and navigates.
+The auth gate it is supposed to enforce arrives in slice 4 along with `AuthModal` and
+`handleAuthSuccess` — writing those now would mean shipping a modal with nothing behind
+it. The comment in `App.jsx` says so at the point it matters.
+
+### How it was tested
+
+Clicked through the running app rather than asserting from the code:
+
+```bash
+cd client && npm run build      # type/import check
+cd client && npm run dev        # then click every transition
+```
+
+Path exercised: Home → select "Modern" → form → Generate → preview → View portfolio →
+portfolio → Back to resume → preview.
+
+### Result
+
+```
+dist/index.html                   0.45 kB │ gzip:  0.29 kB
+dist/assets/index-CVBMkY4D.css    0.89 kB │ gzip:  0.46 kB
+dist/assets/index-rl2MBSO5.js   193.46 kB │ gzip: 60.91 kB
+✓ built in 59ms
+```
+
+| Step | Page indicator | Observed |
+|---|---|---|
+| Load | `page: home` | Hero, "Get Started", both templates; Classic shown selected |
+| Click "Modern" | `page: form` | Navigated **and** template recorded in one action |
+| Click "Generate" | `page: preview` | **`Template: modern`** — the landing choice survived two transitions |
+| Click "View portfolio" | `page: portfolio` | Same `EMPTY_FORM` object as the form and preview showed |
+| Click "Back to resume" | `page: preview` | Returned without losing state |
+
+Browser console: **no errors or exceptions** on load or across any transition.
+
+That `Template: modern` reading on the preview page is the real assertion here. It proves
+`handleSelectTemplate` carries the landing-page choice through the form and into the
+preview — spec test case **TC04**, minus the auth gate that slice 4 adds.
+
+### Known limitations and follow-ups
+
+- No auth gate yet. `handleStartFlow` navigates unconditionally; slice 4 makes it open
+  `AuthModal` when there is no signed-in user.
+- The pages are placeholders. They render JSON, not a resume.
+- `pendingPage` is set but nothing consumes it until `handleAuthSuccess` exists.
+- No tests. `ResumeForm` state-update tests land in slice 2 with the real inputs.
+
+Branch `slice-1-state-machine`, stacked on `slice-0-scaffold` because PR #3 is not merged.
+
+---
+
+## Slice 2 — The form (not started)
+
+Planned: `ResumeForm` with all six sections and add/remove on projects, experience and
+certifications, using functional `setState` to avoid stale-state bugs.
