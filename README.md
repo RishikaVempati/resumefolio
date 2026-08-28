@@ -39,9 +39,6 @@ Built in deployable slices. Current: **slice 6 — hardening and deployment**.
 **You need:** Node 20 or newer (`node --version`), and a free Google Gemini API key —
 see [Getting a Gemini API key](#getting-a-gemini-api-key) below.
 
-The frontend lives at the repo root; the backend is in `server/`. They run as two
-processes, so this needs **two terminals**.
-
 First, get the code. Skip this if you already have it:
 
 ```bash
@@ -49,43 +46,46 @@ git clone https://github.com/RishikaVempati/resumefolio.git
 cd resumefolio
 ```
 
-Everything below is relative to that folder — call it **the repo root**. If you cloned
-into a differently named directory, or already had the project, use your own path
-instead of `resumefolio`.
+Everything below runs from that folder — **the repo root**. If you cloned into a
+differently named directory, or already had the project, use your own path.
 
-### Terminal 1 — backend
-
-```bash
-cd server
-
-cp .env.example .env        # then paste your Gemini key into GEMINI_API_KEY
-npm install
-npm run dev
-```
-
-It prints what it is using, so you can see at a glance whether the key was picked up:
-
-```
-🚀  AI Resume Builder API (Gemini)
-    Server : http://localhost:3001
-    Health : http://localhost:3001/api/health
-    Model  : gemini-3.5-flash-lite
-    API Key: ✅ Configured
-```
-
-`❌ Missing` means the key did not reach `server/.env`. The app still runs — you can click
-through everything — but generating will return a clear error instead of a resume.
-
-### Terminal 2 — frontend
-
-From **the repo root**, not `server/`:
+### One command
 
 ```bash
-npm install
-npm run dev
+npm run setup               # installs both halves
+cp server/.env.example server/.env
+#   → paste your Gemini key into GEMINI_API_KEY
+
+npm start                   # runs the API and the web app together
 ```
 
 Then open **http://localhost:5173**.
+
+`npm start` runs both processes in one terminal, prefixing each line with `[api]` or
+`[web]` so you can tell them apart:
+
+```
+[api] 🚀  AI Resume Builder API (Gemini)
+[api]     Server : http://localhost:3001
+[api]     Model  : gemini-3.5-flash-lite
+[api]     API Key: ✅ Configured
+[web]   ➜  Local:   http://localhost:5173/
+```
+
+`API Key: ❌ Missing` means the key did not reach `server/.env`. The app still runs and
+every page is clickable — only generating returns an error instead of a resume.
+
+**Why two processes at all?** The web app is a static site; the API is a Node server that
+holds the Gemini key. The key must never reach the browser, so it lives in a process the
+browser cannot see. Deployed, these are two hosts — the frontend on Vercel, the backend on
+Render — and a visitor just opens one URL. Locally you are running both yourself.
+
+### Or two terminals, if you prefer
+
+```bash
+cd server && npm install && npm run dev     # terminal 1 → :3001
+npm install && npm run dev                  # terminal 2 → :5173, from the repo root
+```
 
 ### Check the two halves are talking
 
@@ -95,6 +95,9 @@ curl -s http://localhost:3001/api/health
 ```
 
 ### Try it
+
+Open http://localhost:5173 in a **private window** to see what a first-time visitor sees.
+Accounts live in your own browser, so a normal window will remember you.
 
 1. Click **Generate my resume** — you are not signed in, so the sign-up modal opens
 2. Create an account with any email and a password of at least 6 characters
