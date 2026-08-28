@@ -181,6 +181,8 @@ message says whether retrying will help.
 
 ## Before recording the demo
 
+There is a full script in [DEMO.md](DEMO.md).
+
 - **Warm the backend.** Render's free tier spins down after ~15 minutes idle and takes
   30–50s to wake. Hit `/api/health` first, or the first click of the demo is a long
   wait on a blank screen.
