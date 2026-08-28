@@ -1,46 +1,19 @@
 import { useState } from "react";
+import { EMPTY_FORM } from "./formShape";
 import Home from "./pages/Home";
 import PortfolioPreview from "./pages/PortfolioPreview";
 import ResumeForm from "./pages/ResumeForm";
 import ResumePreview from "./pages/ResumePreview";
 
-/**
- * The shape every page agrees on. Exported so ResumeForm, ResumePreview and
- * PortfolioPreview all read the same fields rather than each inventing their own.
- * Changing a name here changes it everywhere, which is the point.
- */
-export const EMPTY_FORM = {
-  personal: {
-    name: "",
-    email: "",
-    phone: "",
-    location: "",
-    title: "",
-    links: "",
-  },
-  education: [],
-  skills: [],
-  // The three dynamic sections. Entries are added and removed in ResumeForm.
-  projects: [],
-  experience: [],
-  certifications: [],
-};
-
-export const EMPTY_EDUCATION = {
-  institution: "",
-  degree: "",
-  field: "",
-  dates: "",
-  grade: "",
-};
-export const EMPTY_PROJECT = { name: "", description: "", tech: "", link: "" };
-export const EMPTY_EXPERIENCE = {
-  role: "",
-  company: "",
-  dates: "",
-  highlights: [],
-};
-export const EMPTY_CERTIFICATION = { name: "", issuer: "", date: "" };
+// Re-exported so pages can import the shape from App, as the spec describes,
+// without creating a cycle back into this module.
+export {
+  EMPTY_CERTIFICATION,
+  EMPTY_EDUCATION,
+  EMPTY_EXPERIENCE,
+  EMPTY_FORM,
+  EMPTY_PROJECT,
+} from "./formShape";
 
 export default function App() {
   const [page, setPage] = useState("home");
