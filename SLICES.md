@@ -600,11 +600,111 @@ budget stops retrying when attempts are slow.
 
 ---
 
-## Slice 4 — Authentication (not started)
+## Slice 4 — Authentication
 
-Planned: `AuthModal` with signup and login, `currentUser` in LocalStorage read via a lazy
-`useState` initialiser, `handleStartFlow` gating, and `handleAuthSuccess` consuming
-`pendingPage`.
+**Done means:** sign up, get redirected to the page you were heading for, with the form
+pre-filled.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `src/auth.js` | Register, login, sign out, and the LocalStorage reads |
+| `src/components/AuthModal.jsx` | One dialog, sign-up and login modes |
+| `src/App.jsx` | `handleStartFlow` gates the flow; `handleAuthSuccess` consumes `pendingPage` |
+
+Storage keys match the spec's DevTools screenshot exactly: `registered_users` holds the
+accounts, `user` holds the current session.
+
+| Decision | Why |
+|---|---|
+| Pre-fill only blank fields | Signing in midway through the form must not overwrite what was typed |
+| One message for unknown email and wrong password | Otherwise the form reveals which emails are registered |
+| Email matched case- and space-insensitively | `ANANYA@…` and ` ananya@… ` are one account to a person |
+| Every LocalStorage access in try/catch | It throws in private browsing; the app must still render |
+
+### This is not real authentication
+
+Accounts live in the visitor's own browser under `registered_users`, **passwords in plain
+text**. Anyone can open DevTools, read every account, and sign in as any of them. There is
+no server, no session, no hashing.
+
+Hashing would be theatre here: the whole store is client-side, so anyone who can read a
+hash can also edit the record. The spec asks for exactly this, and for a capstone it is
+the right scope — what matters is that the README says so in a paragraph rather than
+leaving someone to discover it.
+
+### Result
+
+```
+client:  Tests 47 passed (47)
+server:  ℹ pass 29
+```
+
+Live in Chrome: **TC03** — signed out, "Get Started" opened the modal in Sign Up mode and
+the page did not move. **TC02** — completing signup landed on the form with Full Name and
+Email already filled.
+
+LocalStorage after signup, read from the page:
+
+```json
+{
+  "registered_users": [
+    { "name": "Ananya Iyer", "email": "ananya.iyer@example.in", "password": "kirana123" }
+  ],
+  "user": { "name": "Ananya Iyer", "email": "ananya.iyer@example.in", "password": "kirana123" }
+}
+```
+
+### Two things found while building it
+
+**Node 26 defines its own `localStorage` global** that shadows jsdom's and throws unless
+the process was started with `--localstorage-file`. Every auth test failed on it until the
+setup installed an in-memory store.
+
+**A test caught the required-phone rule.** The template-choice test could not reach the
+preview, because Phone Number became required in slice 3.5 and the form correctly refused
+to submit. The test was wrong, not the app.
+
+---
+
+## Slice 5 — Two templates and the portfolio
+
+**Done means:** the templates look genuinely different, and the portfolio is worth sharing.
+
+### What was built
+
+Modern is a two-column grid with an accent rule under each heading; Classic is one centred
+serif column. They render **identical markup** — everything separating them lives under
+`.resume--modern` / `.resume--classic`, so a third template is a block of CSS rather than
+another component.
+
+The portfolio gets the four sections the spec names — About Me, Skills, Projects,
+Achievements — over a gradient hero. It reads the same generated object the resume does,
+so moving between them never costs another Gemini call, which a test asserts.
+
+`TEMPLATES` moved into `src/templates.js` so the landing gallery and the preview switcher
+cannot drift apart.
+
+### Result
+
+```
+Tests 50 passed (50)
+```
+
+Verified in Chrome with a real Gemini call: landing, loading state, Modern, Classic, and
+the portfolio. Switching Modern → Classic re-rendered instantly with no second call.
+
+### Two bugs found by using it
+
+**A returning user got an empty form.** Pre-filling only happened in `handleAuthSuccess`,
+which someone already signed in never passes through. `formData` is now seeded from the
+stored user at mount too. Every existing test signed in fresh, so none could have caught it.
+
+**The portfolio hero rendered sideways.** A bare `header { display: flex }` rule for the
+app bar also matched `.portfolio__hero`, which is a `<header>` too, flexing the badge,
+heading, tagline and email into one unreadable row. The tests passed the whole time,
+because they assert on content and not on layout.
 
 ---
 
@@ -700,12 +800,70 @@ are untouched — this is a change to how the fields are presented, not to the d
 | Optional steps say so | "Nothing added yet. This step is optional." — otherwise an empty step looks broken |
 | Legend is visually hidden | A two-line `<legend>` breaks the fieldset's border cutout; the visible heading is a normal block and the legend stays for screen readers |
 
+## Slice 8 — The fuller resume
+
+**Done means:** the resume shows the sections the spec's screenshots show, from one
+Gemini call, with nothing invented.
+
+### What was built
+
+The generated schema grows from six fields to eleven:
+
+| Added | Feeds |
+|---|---|
+| `careerObjective` | Main column, under the summary |
+| `keyCompetencies` | Main column, as chips |
+| `technicalSkills`, `tools`, `languages`, `softSkills` | Sidebar, four separate blocks |
+
+The flat `skills` list is gone. The portfolio composes its chips from the four
+categories instead, so the same data serves both pages without duplication.
+
+`ResumePreview` becomes a real two-column layout: sidebar with the skill categories,
+education and certifications; main column with Professional Summary, Career Objective,
+Key Competencies, Work Experience and Projects. A `ListSection` helper renders nothing
+at all when a list is empty, so someone who listed no spoken languages does not get an
+empty heading.
+
+### The categories are a sorting, not new information
+
+Splitting one skills list into four raises the obvious risk: the model filling gaps.
+The first run produced `React Native` and `AWS` in the categories, neither of which was
+in the skills list — but both **were** in the input: `React Native` from the project's
+tech field, `AWS` from the certification. Not invention, but also not what the prompt
+had asked for.
+
+Rather than tightening the prompt to forbid it, the instruction now describes what is
+actually wanted: technologies named **anywhere** in the input may be categorised —
+skills, project tech, roles, certifications — and nothing else may be added. A
+technology someone clearly works with belongs on their resume even if they forgot to
+repeat it in the skills box.
+
+Verified after the change by checking every categorised entry against the submitted
+form:
+
+```
+technicalSkills  ['React', 'TypeScript', 'PostgreSQL', 'React Native', 'SQLite']
+tools            ['Git', 'AWS']
+languages        ['Hindi', 'Tamil']
+softSkills       ['Mentoring']
+
+anything NOT traceable to the form: none
+```
+
+`SQLite` was picked up from the project too. `Hindi` and `Tamil` went to languages and
+not to technical skills, which is the categorisation the prompt is most likely to get
+wrong.
+
 ### How it was tested
 
 ```bash
 npm test
 npm run build
 npm run dev     # then clicked all six steps in Chrome
+
+npm --prefix server test
+npm test
+npm run dev     # then a real generation in Chrome
 ```
 
 ### Result
@@ -737,3 +895,28 @@ used to be on one page are now spread across six.
   shows 83% at the end.
 - No draft persistence: a refresh mid-wizard loses everything, same as before.
 - The step dots are small tap targets on a phone.
+
+server:  ℹ tests 36   ℹ pass 36   ℹ fail 0
+client:  Tests 50 passed (50)
+```
+
+Live generation, 8.8s, rendered in both templates. Modern shows the sidebar and main
+column side by side; Classic stacks them.
+
+### A bug found by looking
+
+In Classic the sidebar rendered **before** the Professional Summary — the aside comes
+first in the DOM so Modern can place it in the left column, and a single-column layout
+inherits that order. A resume that opens with a skills inventory rather than a summary
+reads badly. Fixed with `order` on the flex children, in Classic and in Modern's mobile
+breakpoint. Every test passed throughout: they assert on content, not sequence.
+
+### Known limitations
+
+- `keyCompetencies` is the one field that is genuinely derived rather than restated. It
+  is constrained to the supplied input, but it is the most likely place for drift, and
+  worth a glance before sharing a generated resume.
+- Language detection depends on the model recognising a spoken language. An unusual one
+  listed among frameworks may land in `technicalSkills`, which the prompt makes the
+  deliberate fallback.
+- Still no Resume Score, which appears in the screenshots but in no written story.
