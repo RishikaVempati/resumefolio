@@ -27,8 +27,7 @@ export default function PortfolioPreview({ formData, generated, onBack }) {
 
       <article className="portfolio">
         <header>
-          <h1>{personal.name}</h1>
-          {personal.title && <p className="role">{personal.title}</p>}
+          <h1>Hi, I&rsquo;m {personal.name}</h1>
         </header>
 
         <section>

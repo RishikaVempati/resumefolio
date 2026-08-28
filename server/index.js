@@ -47,5 +47,12 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`server listening on http://localhost:${PORT}`);
+  const configured = process.env.GEMINI_API_KEY?.trim() ? "✅ Configured" : "❌ Missing";
+  console.log(`
+🚀  AI Resume Builder API (Gemini)
+    Server : http://localhost:${PORT}
+    Health : http://localhost:${PORT}/api/health
+    Model  : ${process.env.GEMINI_MODEL}
+    API Key: ${configured}
+`);
 });

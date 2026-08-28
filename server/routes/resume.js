@@ -16,7 +16,7 @@ export function createResumeRouter({ client } = {}) {
     return genai;
   }
 
-  router.post("/resume", async (req, res, next) => {
+  router.post("/generate-resume", async (req, res, next) => {
     const invalid = validateForm(req.body);
     if (invalid) {
       return res.status(400).json({ error: invalid, details: null });

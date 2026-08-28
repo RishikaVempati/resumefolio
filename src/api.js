@@ -18,7 +18,7 @@ export function getHealth() {
 }
 
 export async function generateResume(formData) {
-  const { generated } = await request("/resume", {
+  const { generated } = await request("/generate-resume", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(formData),

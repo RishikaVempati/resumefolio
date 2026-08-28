@@ -19,10 +19,16 @@ export {
 export default function App() {
   const [page, setPage] = useState("home");
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [selectedTemplate, setSelectedTemplate] = useState("classic");
+  const [selectedTemplate, setSelectedTemplate] = useState("modern");
 
-  // Where the user was heading when something interrupted them. Slice 4 uses this
-  // to send them on after the auth modal closes.
+  // Authentication state. Named as the spec's App.jsx snippet names them.
+  // currentUser is read lazily so LocalStorage is not re-read on every render.
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState("signup");
   const [pendingPage, setPendingPage] = useState(null);
 
   /**
