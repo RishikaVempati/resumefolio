@@ -88,6 +88,10 @@ story describes. Both read from this one repository.
    | `GEMINI_MODEL` | `gemini-3.5-flash-lite` |
    | `CLIENT_ORIGIN` | the Vercel URL from step 2 — set this *after* the frontend exists |
 
+   Do **not** set `PORT`. Render injects its own and probes that port; overriding it
+   makes the app listen somewhere the platform is not looking. The code already reads
+   `process.env.PORT`.
+
 5. Confirm the deploy:
 
    ```bash
