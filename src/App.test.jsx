@@ -251,6 +251,34 @@ describe("session persistence", () => {
     expect(screen.getByText("Ananya Iyer")).toBeInTheDocument();
   });
 
+  it("does not leave the previous person's details for the next one", async () => {
+    // The bug this covers: sign out cleared the session but not the answers, so
+    // a second person signing up on the same browser found the first person's
+    // name and email already in the form — and the pre-fill will not overwrite
+    // a filled field, so their own details never replaced them.
+    const user = userEvent.setup();
+    register(ANANYA);
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
+    await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
+    expect(screen.getByLabelText(/full name/i)).toHaveValue("Ananya Iyer");
+
+    await user.click(screen.getByRole("button", { name: /sign out/i }));
+
+    // Now a different person signs up on the same browser.
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
+    const dialog = screen.getByRole("dialog");
+    await user.type(within(dialog).getByLabelText(/full name/i), "Rohan Mehta");
+    await user.type(within(dialog).getByLabelText(/email address/i), "rohan@example.in");
+    await user.type(within(dialog).getByLabelText(/password/i), "ledger123");
+    await user.click(within(dialog).getByRole("button", { name: "Create Account" }));
+
+    expect(screen.getByLabelText(/full name/i)).toHaveValue("Rohan Mehta");
+    expect(screen.getByLabelText(/email address/i)).toHaveValue("rohan@example.in");
+    expect(screen.getByLabelText(/phone number/i)).toHaveValue("");
+  });
+
   it("signing out returns to home and clears the name", async () => {
     register(ANANYA);
     const user = userEvent.setup();
