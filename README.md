@@ -10,13 +10,13 @@ PDF upload → text extraction → LLM structured parse → JSON → HTML templa
 
 ## Status
 
-Built in deployable slices. Current: **slice 2 — LLM parse**.
+Built in deployable slices. Current: **slice 3 — full schema and portfolio template**.
 
 | # | Slice | State |
 |---|---|---|
 | 0 | FastAPI app, `/health`, upload page, Dockerfile | ✅ |
 | 1 | Upload → PDF text extraction | ✅ |
-| 2 | LLM parse behind a `ResumeParser` interface | ☐ |
+| 2 | LLM parse behind a `ResumeParser` interface | ✅ |
 | 3 | Full schema + portfolio template | ☐ |
 | 4 | Validation, rate limiting, tests, CI | ☐ |
 | 5 | Demo video, docs | ☐ |

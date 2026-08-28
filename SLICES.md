@@ -215,16 +215,66 @@ Stub path, end to end:
 The extracted text (`Grace Hopper grace@example.com Rear Admiral, US Navy`) still
 renders below it, so the slice 1 behaviour is intact.
 
-**Not yet verified: the live Gemini call.** No `GEMINI_API_KEY` exists on this
-machine, so `GeminiParser` has only been exercised against a faked transport —
-the request it builds, the truncation, every error code, and the empty-response
-path are all covered by unit tests, but no real API response has been observed.
-Verifying it needs a Google AI Studio key:
+### Live API verification
 
-```bash
-GEMINI_API_KEY=... .venv/bin/uvicorn app.main:app --port 8123
-curl -s -X POST -F "file=@real-resume.pdf;type=application/pdf" \
-  http://127.0.0.1:8123/api/resumes | sed -n '/Parsed fields/,/<\/dl>/p'
+The model id was wrong and unit tests could never have caught it. `gemini-2.5-flash`
+is returned by `ListModels` but 404s on a new key:
+
+```
+HTTP 404  "This model models/gemini-2.5-flash is no longer available to new users.
+           Please update your code to use models/gemini-3.6-flash"
 ```
 
-Until that runs, slice 2 is not signed off and stays unchecked in the README.
+This is the reason a slice is not done until a real call has been made. Every unit
+test passed against a faked transport while the real path was broken.
+
+Settled against the live API:
+
+| Question | Answer | How |
+|---|---|---|
+| Is the key valid? | Yes, free tier | `ListModels` returned 39 callable models |
+| Does `gemini-2.5-flash` work? | **No — 404 for new keys** | Real call |
+| Does `gemini-3.6-flash` work? | Yes, HTTP 200, valid schema JSON | Real call |
+| `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`? | 503, "experiencing high demand" | Real call |
+| Is default thinking worth it? | **No** | Measured, below |
+
+Thinking level, same prompt and schema on `gemini-3.6-flash`:
+
+| Setting | Result | Tokens |
+|---|---|---|
+| default | **503 after 34.9s** under load | 364 total, 314 of them thinking |
+| `thinking_level=LOW` | **200 in 1.0s** | 50 total, 0 thinking |
+
+Field extraction needs no deliberation, and on a free tier the difference is the
+whole budget. `LOW` is set in `GeminiParser`.
+
+### Result
+
+```
+34 passed in 0.31s
+```
+
+Live end to end, real Gemini call through `POST /api/resumes`:
+
+```html
+<dt>Name</dt>    <dd>Grace Hopper</dd>
+<dt>Email</dt>   <dd>grace.hopper@navy.mil</dd>
+<dt>Summary</dt> <dd>Grace Hopper was a Rear Admiral in the US Navy. She invented
+                     the first compiler (A-0), led COBOL standardization, and
+                     taught computing at Vassar.</dd>
+```
+
+Input was `Grace Hopper grace.hopper@navy.mil Rear Admiral, US Navy. Invented the
+first compiler (A-0), led COBOL standardization, and taught computing at Vassar.`
+Name and email are verbatim; the summary is rewritten into third person as the
+system instruction asks, and invents nothing.
+
+**Slice 2 is signed off.** Real resume in, valid JSON out.
+
+**Note:** the SDK logs a one-line notice about automatic function calling on every
+`generate_content` call. Cosmetic, and unrelated to anything we pass.
+
+**Security note:** during this slice a live API key was briefly pasted into
+`.env.example`, which is tracked. It was moved to `.env` before any commit —
+`git log --all -S<key>` and `git grep` both return nothing, so it never entered
+history. The key was rotated afterwards.

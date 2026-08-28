@@ -13,9 +13,10 @@ from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel
 
-# Flash is the cheapest model on the free tier that reliably honours a response
-# schema, which is what keeps the output parseable.
-MODEL = "gemini-2.5-flash"
+# Verified against the live API, not chosen from docs: gemini-2.5-flash is listed
+# by ListModels but 404s for new keys ("no longer available to new users"), and the
+# flash-lite ids were returning 503. This one answers with a valid schema response.
+MODEL = "gemini-3.6-flash"
 
 # A 20-page PDF can be far more text than a resume's worth. Bound what we send:
 # it caps token cost and stops a padded upload from driving the bill.
@@ -76,6 +77,12 @@ class GeminiParser:
                     response_mime_type="application/json",
                     response_schema=Resume,
                     temperature=0,
+                    # Extraction needs no deliberation. Measured on this call:
+                    # default thinking spent 314 thinking tokens and timed out at
+                    # 35s under load; LOW answered in 1.0s for 50 total tokens.
+                    thinking_config=types.ThinkingConfig(
+                        thinking_level=types.ThinkingLevel.LOW
+                    ),
                 ),
             )
         except errors.APIError as exc:
