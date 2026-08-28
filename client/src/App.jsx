@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { generateResume } from "./api";
 import { EMPTY_FORM } from "./formShape";
 import Home from "./pages/Home";
 import PortfolioPreview from "./pages/PortfolioPreview";
@@ -39,9 +40,30 @@ export default function App() {
     handleStartFlow("form");
   }
 
-  function handleSubmitForm(completed) {
+  // Generated content is held here, not in ResumePreview, so switching template
+  // or moving to the portfolio never discards it — the spec is explicit that
+  // those actions must not lose what was generated.
+  const [generated, setGenerated] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
+
+  async function handleSubmitForm(completed) {
     setFormData(completed);
     setPage("preview");
+    setIsGenerating(true);
+    setGenerateError(null);
+
+    try {
+      setGenerated(await generateResume(completed));
+    } catch (error) {
+      setGenerateError(error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  function handleRetry() {
+    handleSubmitForm(formData);
   }
 
   const pages = {
@@ -63,6 +85,10 @@ export default function App() {
     preview: (
       <ResumePreview
         formData={formData}
+        generated={generated}
+        isGenerating={isGenerating}
+        error={generateError}
+        onRetry={handleRetry}
         selectedTemplate={selectedTemplate}
         onSelectTemplate={setSelectedTemplate}
         onEdit={() => setPage("form")}
@@ -72,6 +98,7 @@ export default function App() {
     portfolio: (
       <PortfolioPreview
         formData={formData}
+        generated={generated}
         onBack={() => setPage("preview")}
       />
     ),

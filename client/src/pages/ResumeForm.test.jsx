@@ -34,11 +34,11 @@ describe("personal details", () => {
   it("records what is typed into each field", async () => {
     const { user, current } = renderForm();
 
-    await user.type(screen.getByLabelText(/full name/i), "Grace Hopper");
-    await user.type(screen.getByLabelText(/^email/i), "grace@navy.mil");
+    await user.type(screen.getByLabelText(/full name/i), "Ananya Iyer");
+    await user.type(screen.getByLabelText(/^email/i), "ananya.iyer@example.in");
 
-    expect(current().personal.name).toBe("Grace Hopper");
-    expect(current().personal.email).toBe("grace@navy.mil");
+    expect(current().personal.name).toBe("Ananya Iyer");
+    expect(current().personal.email).toBe("ananya.iyer@example.in");
   });
 });
 
@@ -106,12 +106,12 @@ describe("dynamic sections", () => {
     await user.click(screen.getByRole("button", { name: "Add experience" }));
     await user.type(
       screen.getByLabelText(/highlights/i),
-      "Invented the compiler{enter}Standardised COBOL"
+      "Rebuilt the payments dashboard{enter}Cut page load to under a second"
     );
 
     expect(current().experience[0].highlights).toEqual([
-      "Invented the compiler",
-      "Standardised COBOL",
+      "Rebuilt the payments dashboard",
+      "Cut page load to under a second",
     ]);
   });
 });
@@ -120,19 +120,19 @@ describe("submitting", () => {
   it("hands the completed form to onSubmit", async () => {
     const { user, onSubmit } = renderForm();
 
-    await user.type(screen.getByLabelText(/full name/i), "Grace Hopper");
-    await user.type(screen.getByLabelText(/^email/i), "grace@navy.mil");
+    await user.type(screen.getByLabelText(/full name/i), "Ananya Iyer");
+    await user.type(screen.getByLabelText(/^email/i), "ananya.iyer@example.in");
     await user.click(screen.getByRole("button", { name: "Generate" }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit.mock.calls[0][0].personal.name).toBe("Grace Hopper");
+    expect(onSubmit.mock.calls[0][0].personal.name).toBe("Ananya Iyer");
   });
 
   it("does not submit while a required field is empty", async () => {
     const { user, onSubmit } = renderForm();
 
     // Name is left blank. This is spec test case TC06.
-    await user.type(screen.getByLabelText(/^email/i), "grace@navy.mil");
+    await user.type(screen.getByLabelText(/^email/i), "ananya.iyer@example.in");
     await user.click(screen.getByRole("button", { name: "Generate" }));
 
     expect(onSubmit).not.toHaveBeenCalled();
