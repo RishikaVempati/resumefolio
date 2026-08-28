@@ -147,3 +147,15 @@ Flag it if anything in this file seems to contradict the global agreement in som
 - Before writing code for a slice, state the plan as one line per step with its verification, then run it.
 - Verify by actually running things. "Deployed and working" means you hit the URL.
 - Never commit the API key, Supabase credentials, `.env`, or any real resume PDF used for testing. Ship a `.env.example`.
+- Always give me the curl commands to run manually, so I can execute them myself and
+  understand what is happening. Don't just report that you verified something — hand me
+  the command that lets me verify it too.
+
+## Git workflow
+
+- **One branch per slice.** Branch off `main` before writing any code for a slice:
+  `slice-1-pdf-extraction`, `slice-2-llm-parse`, and so on.
+- **Commit frequently, and never amend a commit I have already seen.** Each slice gets
+  its own new commit (or several). Do not fold new work into an existing commit.
+- **A branch reaches `main` only with my explicit approval.** Push the branch, tell me
+  what is on it, then wait. Do not merge or open-and-merge a PR on your own.
