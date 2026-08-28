@@ -68,7 +68,7 @@ describe("gating the flow behind authentication", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
 
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("tab", { name: "Sign Up" })).toHaveAttribute(
@@ -84,7 +84,7 @@ describe("gating the flow behind authentication", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(onFormPage()).toBe(true);
@@ -97,7 +97,7 @@ describe("gating the flow behind authentication", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
 
     expect(screen.getByLabelText(/full name/i)).toHaveValue("Ananya Iyer");
     expect(screen.getByLabelText(/email address/i)).toHaveValue(ANANYA.email);
@@ -110,7 +110,7 @@ describe("gating the flow behind authentication", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
 
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("tab", { name: "Login" }));
@@ -153,7 +153,7 @@ describe("signing up", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
     const dialog = screen.getByRole("dialog");
     await user.type(within(dialog).getByLabelText(/full name/i), ANANYA.name);
     await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);
@@ -169,7 +169,7 @@ describe("signing up", () => {
     render(<App />);
 
     // Sign up first so the form is reachable, then edit the name.
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
     let dialog = screen.getByRole("dialog");
     await user.type(within(dialog).getByLabelText(/full name/i), ANANYA.name);
     await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);
@@ -186,7 +186,7 @@ describe("signing up", () => {
 
 describe("templates and the portfolio", () => {
   async function generate(user) {
-    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    await user.click(screen.getByRole("button", { name: /generate my resume/i }));
     const dialog = screen.getByRole("dialog");
     await user.type(within(dialog).getByLabelText(/full name/i), ANANYA.name);
     await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);

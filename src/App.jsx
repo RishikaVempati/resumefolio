@@ -161,7 +161,18 @@ export default function App() {
   return (
     <>
       <header className="app-header">
-        <strong>Auto Resume + Portfolio Builder</strong>
+        <button
+          type="button"
+          className="brand"
+          onClick={() => setPage("home")}
+          aria-label="Go to the home page"
+        >
+          <span className="brand__mark" aria-hidden="true">
+            ✦
+          </span>
+          <span className="brand__name">Resumefolio</span>
+        </button>
+
         <span className="header-actions">
           {currentUser ? (
             <>
@@ -171,9 +182,18 @@ export default function App() {
               </button>
             </>
           ) : (
-            <button type="button" className="link" onClick={openLogin}>
-              Login
-            </button>
+            <>
+              <button type="button" className="link" onClick={openLogin}>
+                Login
+              </button>
+              <button
+                type="button"
+                className="primary small"
+                onClick={() => handleStartFlow("form")}
+              >
+                Get Started
+              </button>
+            </>
           )}
         </span>
       </header>
