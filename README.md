@@ -201,6 +201,9 @@ message says whether retrying will help.
 
 ## Known limitations
 
+- **Signing out clears your answers.** Accounts and form data live in the browser, so
+  signing out wipes the form and the generated resume — otherwise the next person to use
+  that browser would start with your details in the fields. There is no "save my draft".
 - **LocalStorage "auth" is not real authentication.** Accounts live in the visitor's own
   browser under the `registered_users` key, passwords included, in plain text. Anyone can
   open DevTools, read every account and sign in as any of them. There is no server, no

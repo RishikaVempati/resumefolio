@@ -83,9 +83,24 @@ export default function App() {
     setPendingPage(null);
   }
 
+  /**
+   * Signing out has to clear the answers and the generated resume, not just the
+   * session. Without it the next person to use this browser starts the form
+   * holding the previous person's name, email and everything else they typed —
+   * and `withUserDetails` will not overwrite a filled field, so their own
+   * details never replace it.
+   */
   function handleSignOut() {
     signOut();
     setCurrentUser(null);
+    setFormData(EMPTY_FORM);
+    // Clearing the generated resume is defence in depth rather than something a
+    // test can observe: reaching the preview again requires submitting the form,
+    // which generates fresh content anyway. It is cleared because holding one
+    // person's resume in memory after they sign out is wrong on its own terms.
+    setGenerated(null);
+    setGenerateError(null);
+    setPendingPage(null);
     setPage("home");
   }
 
