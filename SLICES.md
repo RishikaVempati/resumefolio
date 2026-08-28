@@ -253,7 +253,124 @@ Branch `slice-1-state-machine`, stacked on `slice-0-scaffold` because PR #3 is n
 
 ---
 
-## Slice 2 — The form (not started)
+## Slice 2 — The form
 
-Planned: `ResumeForm` with all six sections and add/remove on projects, experience and
-certifications, using functional `setState` to avoid stale-state bugs.
+**Done means:** fill in every section, add and remove entries, submit, and see the
+collected data on the preview page.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `client/src/pages/ResumeForm.jsx` | All six sections, with add/remove on the dynamic ones |
+| `client/src/formUpdates.js` | Pure transforms over the form shape |
+| `client/src/formShape.js` | `EMPTY_FORM` and the per-entry shapes, moved out of `App.jsx` |
+| `client/src/formUpdates.test.js` | Unit tests for every transform |
+| `client/src/pages/ResumeForm.test.jsx` | Component tests for state updates on input |
+| `client/vitest.config.js` | Vitest + jsdom |
+
+The state transforms live in `formUpdates.js` rather than inside the component, so the
+logic can be tested without rendering and the component stays a description of markup.
+Every transform returns a new object — React compares by identity.
+
+Sections are data, not markup: `PERSONAL_FIELDS` and `SECTIONS` describe the fields, and
+one loop renders them. Adding a field is a line in an array.
+
+**Dependency added:** `vitest`, `jsdom`, and Testing Library, dev-only. Vitest is the
+natural fit for a Vite project — same config, same transform pipeline.
+
+### Three bugs the tests caught
+
+These are the reason this slice took the time it did. All three would have shipped.
+
+**1. Circular import.** `App.jsx` imported `ResumeForm`, which imported `EMPTY_PROJECT`
+back from `App.jsx`. At module-init time the shapes were `undefined`, so `addEntry`
+spread `undefined` and produced `{}` — every added entry had no fields, and the
+highlights textarea crashed on `undefined.join`. Fixed by moving the shapes into
+`formShape.js`, which `App.jsx` re-exports so the spec's "exported from App.jsx" still
+holds.
+
+**2. Shared array reference.** `addEntry` used `{ ...emptyEntry }`, a shallow copy, so
+every experience entry shared one `highlights` array — typing in one would have written
+into all of them. Now `structuredClone`.
+
+**3. Round-trip input stripping.** The skills input's value was `skills.join(", ")` and
+its `onChange` re-parsed on every keystroke. Typing a comma produced an empty fragment,
+which was filtered out, so the comma vanished the instant it was typed — `"React, Node"`
+became `"ReactNode"`. Highlights had the same bug with spaces: `"Invented the"` became
+`"Inventedthe"`.
+
+Fixed in two ways, deliberately different:
+
+- **Skills** keeps the raw text in local state and parses alongside it.
+- **Highlights** made the split lossless — `splitLines` does not trim or filter — so
+  `join("\n")` round-trips exactly. Tidying moved to `normalizeForm`, applied once at
+  submit.
+
+The second is the better pattern; skills keeps local text because `", "` cannot round-trip
+through a plain split.
+
+### How it was tested
+
+```bash
+cd client && npm test
+cd client && npm run build
+cd client && npm run dev      # then fill the form in the browser
+```
+
+### Result
+
+```
+Test Files  2 passed (2)
+     Tests  26 passed (26)
+  Duration  1.04s
+```
+
+```
+dist/assets/index-CW8-DEsY.js   197.26 kB │ gzip: 62.07 kB
+✓ built in 57ms
+```
+
+Filled in the browser, then submitted. The preview received exactly what was typed:
+
+```json
+{
+  "personal": { "name": "Grace Hopper", "email": "grace@navy.mil", ... },
+  "skills": ["COBOL", "Compilers", "Naval Systems"],
+  "experience": [
+    {
+      "role": "Rear Admiral",
+      "company": "United States Navy",
+      "highlights": [
+        "Invented the first compiler (A-0)",
+        "Led COBOL standardization"
+      ]
+    }
+  ]
+}
+```
+
+Three skills from one comma-separated field, two highlights from two lines, spaces and
+parentheses intact. Those are the exact cases that were broken before the fix, verified
+in a real browser rather than only in jsdom.
+
+Spec test case **TC06** is covered by a test: submitting with a required field empty does
+not call `onSubmit`.
+
+### Known limitations and follow-ups
+
+- Validation is HTML `required` on name and email only. Richer validation is slice 6.
+- Entries are keyed by array index. Fine while entries are only appended and removed;
+  it would need stable ids if reordering is ever added.
+- Skills is one comma-separated field rather than chips. Faster to fill, less pretty.
+- No auth gate yet — still slice 4.
+
+Branch `slice-2-resume-form`.
+
+---
+
+## Slice 3 — Gemini generation (not started)
+
+Planned: `server/routes/resume.js` mounted under `/api`, `POST /api/resume` formatting the
+form data into a prompt, calling Gemini with `thinking_level: LOW`, and returning generated
+content for `ResumePreview` to render.
