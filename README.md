@@ -42,11 +42,21 @@ see [Getting a Gemini API key](#getting-a-gemini-api-key) below.
 The frontend lives at the repo root; the backend is in `server/`. They run as two
 processes, so this needs **two terminals**.
 
-### Terminal 1 — backend
+First, get the code. Skip this if you already have it:
 
 ```bash
 git clone https://github.com/RishikaVempati/resumefolio.git
-cd resumefolio/server
+cd resumefolio
+```
+
+Everything below is relative to that folder — call it **the repo root**. If you cloned
+into a differently named directory, or already had the project, use your own path
+instead of `resumefolio`.
+
+### Terminal 1 — backend
+
+```bash
+cd server
 
 cp .env.example .env        # then paste your Gemini key into GEMINI_API_KEY
 npm install
@@ -68,8 +78,9 @@ through everything — but generating will return a clear error instead of a res
 
 ### Terminal 2 — frontend
 
+From **the repo root**, not `server/`:
+
 ```bash
-cd resumefolio        # the repo root, not server/
 npm install
 npm run dev
 ```
