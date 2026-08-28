@@ -1,10 +1,11 @@
 from pathlib import Path
 
-from fastapi import FastAPI, Request, UploadFile
+from fastapi import Depends, FastAPI, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app.extraction import UnreadablePDF, extract_text
+from app.parsing import ParseFailed, ResumeParser, get_parser
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -57,8 +58,12 @@ async def _read_capped(upload: UploadFile) -> bytes:
 
 
 @app.post("/api/resumes", response_class=HTMLResponse)
-async def create_resume(request: Request, file: UploadFile) -> HTMLResponse:
-    """Slice 1: extract the text and show it. The LLM parse lands in slice 2."""
+async def create_resume(
+    request: Request,
+    file: UploadFile,
+    parser: ResumeParser = Depends(get_parser),
+) -> HTMLResponse:
+    """Slice 2: extract the text, parse it into fields, show them."""
     if file.content_type != "application/pdf":
         return _error(request, f"Expected a PDF, got {file.content_type!r}.", 415)
 
@@ -75,8 +80,15 @@ async def create_resume(request: Request, file: UploadFile) -> HTMLResponse:
     except UnreadablePDF as exc:
         return _error(request, str(exc), 422)
 
+    try:
+        resume = parser.parse(text)
+    except ParseFailed as exc:
+        return _error(request, str(exc), 502)
+
     # Jinja2 autoescapes, so resume text renders as text and never as markup.
-    return templates.TemplateResponse(request, "upload.html", {"extracted_text": text})
+    return templates.TemplateResponse(
+        request, "upload.html", {"resume": resume, "extracted_text": text}
+    )
 
 
 def _error(request: Request, message: str, status: int) -> HTMLResponse:
