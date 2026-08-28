@@ -6,20 +6,34 @@
   <title>Resume → Portfolio</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
-  <main class="w-full max-w-md">
+<body class="min-h-screen bg-slate-50 text-slate-900 p-6">
+  <main class="mx-auto w-full max-w-3xl">
     <h1 class="text-2xl font-semibold">Resume &rarr; Portfolio</h1>
     <p class="mt-2 text-sm text-slate-600">Upload a PDF resume, get a shareable portfolio page.</p>
 
-    <form class="mt-6 space-y-4">
+    <form action="/api/resumes" method="post" enctype="multipart/form-data"
+          class="mt-6 space-y-4" onsubmit="document.getElementById('go').disabled = true;
+                                           document.getElementById('go').textContent = 'Extracting…';">
       <input type="file" name="file" accept="application/pdf" required
              class="block w-full text-sm file:mr-4 file:rounded file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-white">
-      <button type="submit" disabled
-              class="w-full rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-40">
+      <button id="go" type="submit"
+              class="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-40">
         Upload
       </button>
-      <p class="text-xs text-slate-500">Upload is wired up in the next slice.</p>
     </form>
+
+    {% if error %}
+    <p role="alert" class="mt-6 rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+      {{ error }}
+    </p>
+    {% endif %}
+
+    {% if extracted_text %}
+    <section class="mt-8">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Extracted text</h2>
+      <pre class="mt-2 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-white p-4 text-sm">{{ extracted_text }}</pre>
+    </section>
+    {% endif %}
   </main>
 </body>
 </html>
