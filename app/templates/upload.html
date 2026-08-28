@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resume → Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
+  <main class="w-full max-w-md">
+    <h1 class="text-2xl font-semibold">Resume &rarr; Portfolio</h1>
+    <p class="mt-2 text-sm text-slate-600">Upload a PDF resume, get a shareable portfolio page.</p>
+
+    <form class="mt-6 space-y-4">
+      <input type="file" name="file" accept="application/pdf" required
+             class="block w-full text-sm file:mr-4 file:rounded file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-white">
+      <button type="submit" disabled
+              class="w-full rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-40">
+        Upload
+      </button>
+      <p class="text-xs text-slate-500">Upload is wired up in the next slice.</p>
+    </form>
+  </main>
+</body>
+</html>
