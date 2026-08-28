@@ -35,7 +35,7 @@ describe("personal details", () => {
     const { user, current } = renderForm();
 
     await user.type(screen.getByLabelText(/full name/i), "Ananya Iyer");
-    await user.type(screen.getByLabelText(/^email/i), "ananya.iyer@example.in");
+    await user.type(screen.getByLabelText(/email address/i), "ananya.iyer@example.in");
 
     expect(current().personal.name).toBe("Ananya Iyer");
     expect(current().personal.email).toBe("ananya.iyer@example.in");
@@ -121,7 +121,8 @@ describe("submitting", () => {
     const { user, onSubmit } = renderForm();
 
     await user.type(screen.getByLabelText(/full name/i), "Ananya Iyer");
-    await user.type(screen.getByLabelText(/^email/i), "ananya.iyer@example.in");
+    await user.type(screen.getByLabelText(/email address/i), "ananya.iyer@example.in");
+    await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
     await user.click(screen.getByRole("button", { name: "Generate" }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
@@ -132,7 +133,8 @@ describe("submitting", () => {
     const { user, onSubmit } = renderForm();
 
     // Name is left blank. This is spec test case TC06.
-    await user.type(screen.getByLabelText(/^email/i), "ananya.iyer@example.in");
+    await user.type(screen.getByLabelText(/email address/i), "ananya.iyer@example.in");
+    await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
     await user.click(screen.getByRole("button", { name: "Generate" }));
 
     expect(onSubmit).not.toHaveBeenCalled();

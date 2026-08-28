@@ -498,6 +498,108 @@ Branch `slice-3-gemini-generation`.
 
 ---
 
+## Slice 3.5 — Align with the spec's screenshots
+
+The spec's stories embed code and UI screenshots. Text extraction cannot read images,
+so everything up to slice 3 came from the prose alone. The screenshots contradicted
+several choices.
+
+| Corrected | From | Was |
+|---|---|---|
+| Frontend at the repo root, `server/` nested | Folder tree screenshot | `client/` + `server/` |
+| Default template `"modern"` | `App.jsx` snippet | `"classic"` |
+| `currentUser` (lazy), `isAuthOpen`, `authMode` | `App.jsx` snippet | only `pendingPage` |
+| Full Name\*, Email\*, Phone\*, Address, LinkedIn, GitHub | Form screenshot | invented title/location/links |
+| `POST /api/generate-resume` | Network tab | `/api/resume` |
+| Startup banner, `.env.example` layout | Terminal + editor screenshots | plainer versions |
+
+Structural corrections were taken immediately because every later file references
+them; the 6-step wizard and richer resume layout are additive and can follow.
+
+**Not taken:** the wizard form, the two-column resume with Career Objective / Key
+Competencies / Resume Score, and Download PDF — which the spec's own Conclusion lists
+as *future* scope, contradicting the preview screenshot.
+
+Commit `42fde1e`.
+
+---
+
+## Slice 3.6 — Retry with backoff
+
+**Done means:** a transient upstream failure recovers without the user seeing an error.
+
+### Why this jumped the queue
+
+The free tier returned 503 "high demand" three times in one afternoon, twice in a row
+on the same request. Without a retry the demo is a coin flip: a mentor clicking
+Generate could simply get an error.
+
+### What was built
+
+`server/routes/retry.js` — `withRetry(operation, options)`.
+
+| Decision | Why |
+|---|---|
+| Retry 429, 500, 502, 503, 504 | Transient. A 400 or 404 will fail identically next time |
+| **Never** retry an exhausted daily quota | It will still be exhausted in two seconds, and retrying spends more of a quota that is already gone |
+| Exponential backoff with jitter | So simultaneous clients do not retry in lockstep |
+| Honour Google's `"retry in 40.5s"` hint | It has already said when it will be free |
+| A wall-clock **budget**, not just an attempt count | A failing attempt can itself take 30s. Three attempts without a budget is two minutes on a spinner |
+| `sleep` and `now` injected | Tests run instantly and deterministically |
+
+### Two bugs found while building it
+
+**1. The daily-cap advice never appeared.** `decorate()` overwrote `error.message`
+*before* checking it for "quota", so the branch could never be true. Caught by the
+test asserting the message, not by reading the code.
+
+**2. A failing test hung the whole suite.** Each test closed its own server at the
+end, so a test that failed earlier left a listening handle and `node --test` waited
+forever — no output at all, just a timeout. Servers are now collected and closed in
+`after()`. The suite went from hanging past 120s to finishing in 0.2s.
+
+### How it was tested
+
+```bash
+npm --prefix server test
+npm test
+curl -s -X POST http://localhost:3001/api/generate-resume \
+  -H 'Content-Type: application/json' -d @sample-form.json
+```
+
+### Result
+
+```
+server:  ℹ tests 29   ℹ pass 29   ℹ fail 0   duration_ms 111
+client:  Test Files 2 passed   Tests 26 passed (26)
+```
+
+Live call, after the retry landed:
+
+```
+http=200 latency=1.4s
+summary: "Frontend Developer with experience building scalable payment dashboards
+          and web applications. Skilled in React, TypeScript, Node.js, PostgreSQL."
+bullets: "Rebuilt the payments dashboard used by 40 merchants"
+         "Cut first page load from 4.2s to under a second"
+```
+
+This run also re-verified slice 3.5's endpoint rename and new personal field names
+end to end, which had been left unverified when the API was returning 503s.
+
+New tests: transient 503 retried then succeeded (3 calls, 200 out); attempt limit
+reached reports "after 3 attempts"; exhausted quota is **not** retried and explains
+the daily cap; a 404 is not retried; backoff delays fall inside the jitter band; the
+budget stops retrying when attempts are slow.
+
+### Known limitations
+
+- Retry is server-side only. The frontend shows one spinner throughout and cannot
+  tell "still trying" from "slow" — a "retrying…" state would be better.
+- `budgetMs` is 45s. On a cold Render instance the first request may exceed that.
+
+---
+
 ## Slice 4 — Authentication (not started)
 
 Planned: `AuthModal` with signup and login, `currentUser` in LocalStorage read via a lazy

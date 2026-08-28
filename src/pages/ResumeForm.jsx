@@ -16,13 +16,14 @@ import {
   splitLines,
 } from "../formUpdates";
 
+// Labels and required flags follow the spec's ResumeForm screenshot.
 const PERSONAL_FIELDS = [
-  { name: "name", label: "Full name", required: true },
-  { name: "title", label: "Professional title", placeholder: "Frontend Developer" },
-  { name: "email", label: "Email", type: "email", required: true },
-  { name: "phone", label: "Phone" },
-  { name: "location", label: "Location" },
-  { name: "links", label: "Links", placeholder: "github.com/you, linkedin.com/in/you" },
+  { name: "name", label: "Full Name", required: true, placeholder: "Ananya Iyer" },
+  { name: "email", label: "Email Address", type: "email", required: true, placeholder: "ananya@example.in" },
+  { name: "phone", label: "Phone Number", required: true, placeholder: "+91 9876543210" },
+  { name: "address", label: "Address", placeholder: "City, State, Country" },
+  { name: "linkedin", label: "LinkedIn URL", placeholder: "https://linkedin.com/in/username" },
+  { name: "github", label: "GitHub URL", placeholder: "https://github.com/username" },
 ];
 
 const SECTIONS = [

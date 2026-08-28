@@ -27,13 +27,15 @@ export const EMPTY_EXPERIENCE = {
 export const EMPTY_CERTIFICATION = { name: "", issuer: "", date: "" };
 
 export const EMPTY_FORM = {
+  // Field names follow the spec's ResumeForm screenshot: Full Name, Email
+  // Address, Phone Number, Address, LinkedIn URL, GitHub URL.
   personal: {
     name: "",
     email: "",
     phone: "",
-    location: "",
-    title: "",
-    links: "",
+    address: "",
+    linkedin: "",
+    github: "",
   },
   education: [],
   skills: [],
