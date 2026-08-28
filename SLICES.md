@@ -147,7 +147,134 @@ Commit: `ae92fd5`, branch `slice-1-pdf-extraction` — awaiting review.
 
 ---
 
-## Slice 2 — LLM parse (not started)
+## Slice 2 — LLM parse behind a parser interface
 
-Planned: `ResumeParser` protocol with `GeminiParser` and `StubParser`. Tests run
-against the stub, so they need no network and the demo survives a rate limit.
+**Done means:** real resume in, valid JSON out.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `app/parsing.py` | `Resume` schema, `ResumeParser` protocol, `GeminiParser`, `StubParser`, `get_parser()` |
+| `app/main.py` | `POST /api/resumes` now extracts, then parses; parser injected via `Depends` |
+| `app/templates/upload.html` | Parsed fields panel; raw text demoted to a `<details>` |
+| `tests/test_parsing.py` | Parser unit tests, no network |
+| `tests/test_upload.py` | Endpoint tests, extended for the parse step |
+
+The schema is three fields — `name`, `email`, `summary`. It grows in slice 3.
+
+`get_parser()` returns `GeminiParser` when `GEMINI_API_KEY` is set and `StubParser`
+when it is not. Tests inject the stub through `app.dependency_overrides`, so the
+suite needs no key, no network, and cannot be broken by a rate limit. The demo has
+the same fallback: an expired key degrades to a fixed response instead of a 500.
+
+Decisions worth naming:
+
+| Decision | Why |
+|---|---|
+| `response_schema=Resume` + `response_mime_type=application/json` | Schema-constrained decoding. The model cannot return prose we then have to regex |
+| `temperature=0` | Extraction, not writing. The same resume should give the same fields |
+| Input truncated at 20,000 chars | A 20-page PDF is far more than a resume's worth of text; this bounds token cost |
+| `APIError` → `ParseFailed`, surfaced as **502** | The upstream call failed, not the user's request. The message says whether a retry helps |
+| `@lru_cache` on `get_parser` | The HTTP client should outlive a single request |
+| System instruction forbids invention | Empty string for an absent field beats a plausible fabricated one on someone's real portfolio |
+
+Model output is untrusted text in the page, exactly like the resume text is. A test
+asserts a `<script>` tag coming back from the parser renders escaped.
+
+### How it was tested
+
+```bash
+.venv/bin/python -m pytest tests -q
+```
+
+Then, against a running server with no key set (so, the stub):
+
+```bash
+.venv/bin/uvicorn app.main:app --port 8123
+
+curl -s -X POST -F "file=@sample-resume.pdf;type=application/pdf" \
+  http://127.0.0.1:8123/api/resumes | sed -n '/Parsed fields/,/<\/dl>/p'
+```
+
+### Result
+
+```
+34 passed in 0.32s
+```
+
+Stub path, end to end:
+
+```html
+<dt>Name</dt>    <dd>Ada Lovelace</dd>
+<dt>Email</dt>   <dd>ada@example.com</dd>
+<dt>Summary</dt> <dd>A mathematician and writer known for work on Charles
+                     Babbage&#39;s Analytical Engine. …</dd>
+```
+
+The extracted text (`Grace Hopper grace@example.com Rear Admiral, US Navy`) still
+renders below it, so the slice 1 behaviour is intact.
+
+### Live API verification
+
+The model id was wrong and unit tests could never have caught it. `gemini-2.5-flash`
+is returned by `ListModels` but 404s on a new key:
+
+```
+HTTP 404  "This model models/gemini-2.5-flash is no longer available to new users.
+           Please update your code to use models/gemini-3.6-flash"
+```
+
+This is the reason a slice is not done until a real call has been made. Every unit
+test passed against a faked transport while the real path was broken.
+
+Settled against the live API:
+
+| Question | Answer | How |
+|---|---|---|
+| Is the key valid? | Yes, free tier | `ListModels` returned 39 callable models |
+| Does `gemini-2.5-flash` work? | **No — 404 for new keys** | Real call |
+| Does `gemini-3.6-flash` work? | Yes, HTTP 200, valid schema JSON | Real call |
+| `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`? | 503, "experiencing high demand" | Real call |
+| Is default thinking worth it? | **No** | Measured, below |
+
+Thinking level, same prompt and schema on `gemini-3.6-flash`:
+
+| Setting | Result | Tokens |
+|---|---|---|
+| default | **503 after 34.9s** under load | 364 total, 314 of them thinking |
+| `thinking_level=LOW` | **200 in 1.0s** | 50 total, 0 thinking |
+
+Field extraction needs no deliberation, and on a free tier the difference is the
+whole budget. `LOW` is set in `GeminiParser`.
+
+### Result
+
+```
+34 passed in 0.31s
+```
+
+Live end to end, real Gemini call through `POST /api/resumes`:
+
+```html
+<dt>Name</dt>    <dd>Grace Hopper</dd>
+<dt>Email</dt>   <dd>grace.hopper@navy.mil</dd>
+<dt>Summary</dt> <dd>Grace Hopper was a Rear Admiral in the US Navy. She invented
+                     the first compiler (A-0), led COBOL standardization, and
+                     taught computing at Vassar.</dd>
+```
+
+Input was `Grace Hopper grace.hopper@navy.mil Rear Admiral, US Navy. Invented the
+first compiler (A-0), led COBOL standardization, and taught computing at Vassar.`
+Name and email are verbatim; the summary is rewritten into third person as the
+system instruction asks, and invents nothing.
+
+**Slice 2 is signed off.** Real resume in, valid JSON out.
+
+**Note:** the SDK logs a one-line notice about automatic function calling on every
+`generate_content` call. Cosmetic, and unrelated to anything we pass.
+
+**Security note:** during this slice a live API key was briefly pasted into
+`.env.example`, which is tracked. It was moved to `.env` before any commit —
+`git log --all -S<key>` and `git grep` both return nothing, so it never entered
+history. Rotating that key is still outstanding.
