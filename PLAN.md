@@ -55,6 +55,15 @@ The spec's five functional requirements. All mandatory:
    back to the browser, rendered into the selected template
 ```
 
+This matches the architecture diagram in the spec: React.js + Vite frontend → Node.js +
+Express backend API server → Google Gemini, with CORS configuration and environment
+variables holding the credentials.
+
+One wording difference: the diagram labels the backend box "API Routing & Business Logic
+(Express Routes & Controllers)". The spec's Epic 2 text names only `routes/resume.js`, so
+route handlers hold the logic and there is no separate controllers layer — for a single
+endpoint that would be ceremony. If a reviewer expects the split, it is a small change.
+
 Three rules that follow from this shape:
 
 - **The API key lives only on the server.** The browser never sees it. That is the entire
