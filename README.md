@@ -36,30 +36,75 @@ Built in deployable slices. Current: **slice 6 — hardening and deployment**.
 
 ## Run locally
 
-Two terminals. Backend first:
+**You need:** Node 20 or newer (`node --version`), and a free Google Gemini API key —
+see [Getting a Gemini API key](#getting-a-gemini-api-key) below.
+
+The frontend lives at the repo root; the backend is in `server/`. They run as two
+processes, so this needs **two terminals**.
+
+### Terminal 1 — backend
 
 ```bash
-cd server
-cp .env.example .env        # then paste your Gemini key into it
+git clone https://github.com/RishikaVempati/resumefolio.git
+cd resumefolio/server
+
+cp .env.example .env        # then paste your Gemini key into GEMINI_API_KEY
 npm install
-npm run dev                 # http://localhost:3001
+npm run dev
 ```
 
-Frontend, from the repo root:
+It prints what it is using, so you can see at a glance whether the key was picked up:
+
+```
+🚀  AI Resume Builder API (Gemini)
+    Server : http://localhost:3001
+    Health : http://localhost:3001/api/health
+    Model  : gemini-3.5-flash-lite
+    API Key: ✅ Configured
+```
+
+`❌ Missing` means the key did not reach `server/.env`. The app still runs — you can click
+through everything — but generating will return a clear error instead of a resume.
+
+### Terminal 2 — frontend
 
 ```bash
+cd resumefolio        # the repo root, not server/
 npm install
-npm run dev                 # http://localhost:5173
+npm run dev
 ```
 
-Verify the two are talking:
+Then open **http://localhost:5173**.
+
+### Check the two halves are talking
 
 ```bash
 curl -s http://localhost:3001/api/health
 # {"status":"ok","model":"gemini-3.5-flash-lite","apiKeyConfigured":true}
 ```
 
-`apiKeyConfigured: false` means `server/.env` has no `GEMINI_API_KEY`.
+### Try it
+
+1. Click **Generate my resume** — you are not signed in, so the sign-up modal opens
+2. Create an account with any email and a password of at least 6 characters
+   (it is stored in your own browser; see the limitations below)
+3. Fill in the six steps. Only Name, Email and Phone are required — the rest are optional,
+   but the more you give it the less the AI has to work with
+4. **Generate Resume**. It takes a few seconds
+5. Switch between **Modern** and **Classic**, then open **View portfolio** — both come from
+   the same single AI call, so neither costs another wait
+
+## Running the tests
+
+```bash
+npm test                    # frontend, 56 tests, Vitest
+npm --prefix server test    # backend, 36 tests, node --test
+npm run build               # production build
+```
+
+Neither suite needs an API key or a network connection: the frontend mocks the API module,
+and the backend injects a fake Gemini client. That is deliberate — tests that need a live
+key would fail on a rate limit rather than on a bug.
 
 ## Getting a Gemini API key
 
