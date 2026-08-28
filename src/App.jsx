@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { generateResume } from "./api";
+import { getCurrentUser, setCurrentUser as persistUser, signOut } from "./auth";
+import AuthModal from "./components/AuthModal";
 import { EMPTY_FORM } from "./formShape";
 import Home from "./pages/Home";
 import PortfolioPreview from "./pages/PortfolioPreview";
@@ -23,27 +25,63 @@ export default function App() {
 
   // Authentication state. Named as the spec's App.jsx snippet names them.
   // currentUser is read lazily so LocalStorage is not re-read on every render.
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [currentUser, setCurrentUser] = useState(getCurrentUser);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("signup");
   const [pendingPage, setPendingPage] = useState(null);
 
   /**
-   * The single entry point into the flow. Slice 4 puts the auth gate here: when
-   * there is no signed-in user this stores the destination in pendingPage and
-   * opens AuthModal instead of navigating.
+   * The single entry point into the flow. With no signed-in user this remembers
+   * where they were heading and opens the modal instead of navigating; the
+   * destination is honoured in handleAuthSuccess.
    */
   function handleStartFlow(destination = "form") {
-    setPendingPage(destination);
+    if (!currentUser) {
+      setPendingPage(destination);
+      setAuthMode("signup");
+      setIsAuthOpen(true);
+      return;
+    }
     setPage(destination);
   }
 
   function handleSelectTemplate(template) {
     setSelectedTemplate(template);
     handleStartFlow("form");
+  }
+
+  /**
+   * Pre-fill what we know about the user, then send them where they were going.
+   * Their own typing wins: only blank fields are filled, so signing in midway
+   * through the form cannot overwrite it.
+   */
+  function handleAuthSuccess(user) {
+    setCurrentUser(user);
+    persistUser(user);
+    setIsAuthOpen(false);
+
+    setFormData((prev) => ({
+      ...prev,
+      personal: {
+        ...prev.personal,
+        name: prev.personal.name || user.name,
+        email: prev.personal.email || user.email,
+      },
+    }));
+
+    setPage(pendingPage ?? "form");
+    setPendingPage(null);
+  }
+
+  function handleSignOut() {
+    signOut();
+    setCurrentUser(null);
+    setPage("home");
+  }
+
+  function openLogin() {
+    setAuthMode("login");
+    setIsAuthOpen(true);
   }
 
   // Generated content is held here, not in ResumePreview, so switching template
@@ -114,9 +152,31 @@ export default function App() {
     <>
       <header>
         <strong>Auto Resume + Portfolio Builder</strong>
-        <span data-testid="page-indicator">page: {page}</span>
+        <span className="header-actions">
+          {currentUser ? (
+            <>
+              <span className="signed-in">{currentUser.name}</span>
+              <button type="button" className="link" onClick={handleSignOut}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button type="button" className="link" onClick={openLogin}>
+              Login
+            </button>
+          )}
+        </span>
       </header>
+
       {pages[page]}
+
+      {isAuthOpen && (
+        <AuthModal
+          mode={authMode}
+          onClose={() => setIsAuthOpen(false)}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
     </>
   );
 }
