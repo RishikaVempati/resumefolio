@@ -3,12 +3,28 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001";
 
 async function request(path, options) {
-  const response = await fetch(`${BASE_URL}/api${path}`, options);
+  let response;
+
+  try {
+    response = await fetch(`${BASE_URL}/api${path}`, options);
+  } catch {
+    // fetch rejects with "Failed to fetch" for every network-level failure —
+    // server down, DNS, CORS, offline. The browser deliberately does not say
+    // which. That message means nothing to someone using the app, so say what
+    // it actually implies and where to look.
+    throw new Error(
+      `Could not reach the server at ${BASE_URL}. ` +
+        "Check that the API is running, or that it has finished waking up if it " +
+        "has been idle, then try again."
+    );
+  }
+
   const body = await response.json().catch(() => null);
 
   if (!response.ok) {
     // The backend's error handler always sends { error, details }.
-    throw new Error(body?.error ?? `${response.status} ${response.statusText}`);
+    const message = body?.error ?? `${response.status} ${response.statusText}`;
+    throw new Error(body?.details ? `${message} ${body.details}` : message);
   }
   return body;
 }
