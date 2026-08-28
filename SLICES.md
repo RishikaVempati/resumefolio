@@ -920,3 +920,69 @@ breakpoint. Every test passed throughout: they assert on content, not sequence.
   listed among frameworks may land in `technicalSkills`, which the prompt makes the
   deliberate fallback.
 - Still no Resume Score, which appears in the screenshots but in no written story.
+
+---
+
+## Slice 9 — Landing page and a visual identity
+
+**Done means:** the app looks like a product rather than an unstyled form.
+
+### The design decision that shapes everything else
+
+**Dark chrome, light paper.** The app — landing, wizard, toolbars, modal — is dark, which
+is what the spec's screenshots show. The resume and portfolio stay on **white**.
+
+That split is not decoration. A resume is a document: it gets printed, screenshotted and
+pasted into applications, so a dark one would be wrong everywhere it ends up. The white
+sheet floating on a dark page also does the work of making the output feel like the
+artefact rather than part of the interface.
+
+Two `--paper-*` tokens sit alongside the chrome tokens so the boundary is explicit in the
+CSS rather than a series of one-off overrides.
+
+### What was built
+
+| Piece | Detail |
+|---|---|
+| Navbar | Brand mark, Login and Get Started when signed out; name and Sign out when signed in |
+| Hero | Status badge, gradient headline, two calls to action |
+| Hero art | A mock resume in **pure CSS** — no image to load, stays sharp at any size |
+| Features | Four cards, each naming something real: no invented facts, one form for two views, switch templates without regenerating, done in a minute |
+| Templates | The existing gallery, restyled |
+| Footer | What the project is, and that nothing is stored on a server |
+
+One accent, one gradient, and a single reused glow, rather than a different treatment per
+section. Two soft radial lights are fixed behind the whole page so flat sections still
+have depth.
+
+### How it was tested
+
+```bash
+npm test
+npm run build
+npm run dev     # then the whole flow in Chrome, signed out
+```
+
+### Result
+
+```
+Tests  56 passed (56)
+build  ✓ built
+```
+
+Checked in the browser: landing, auth modal over a blurred backdrop, the wizard on dark,
+and a real generated resume — white paper against the dark page, which is the pairing the
+whole scheme rests on.
+
+Two tests needed updating: the hero call to action is now "Generate my resume", and
+"Get Started" moved to the navbar where it only exists while signed out. A signed-in test
+could no longer find it.
+
+### Known limitations
+
+- The feature icons are emoji. They render differently across platforms; real SVG icons
+  would be steadier but add a dependency or a sprite to maintain.
+- No light-mode option. The dark chrome is fixed, and someone reading in bright sunlight
+  has no way to change it.
+- The hero art is decorative and marked `aria-hidden`; it does not preview the user's own
+  content, which a more finished product would do.
