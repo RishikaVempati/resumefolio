@@ -42,6 +42,21 @@ beforeEach(() => {
 const currentPage = () =>
   screen.getByRole("heading", { level: 1 }).textContent;
 
+/**
+ * The form is a six-step wizard, so reaching Generate means filling the
+ * required fields on step 1 and clicking through the rest.
+ */
+async function fillAndGenerate(user) {
+  await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
+  while (screen.queryByRole("button", { name: /next/i })) {
+    await user.click(screen.getByRole("button", { name: /next/i }));
+  }
+  await user.click(screen.getByRole("button", { name: /generate resume/i }));
+}
+
+/** The wizard's first step is the form page; assert on its step indicator. */
+const onFormPage = () => screen.queryByTestId("wizard-step") !== null;
+
 describe("gating the flow behind authentication", () => {
   it('opens the modal in signup mode when "Get Started" is clicked signed out', async () => {
     // Spec TC03.
@@ -67,7 +82,7 @@ describe("gating the flow behind authentication", () => {
     await user.click(screen.getByRole("button", { name: "Get Started" }));
 
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(currentPage()).toMatch(/your details/i);
+    expect(onFormPage()).toBe(true);
   });
 
   it("pre-fills the form for a user who signed in on a previous visit", async () => {
@@ -99,7 +114,7 @@ describe("gating the flow behind authentication", () => {
     await user.click(within(dialog).getByRole("button", { name: "Log In" }));
 
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(currentPage()).toMatch(/your details/i);
+    expect(onFormPage()).toBe(true);
     expect(screen.getByLabelText(/full name/i)).toHaveValue("Ananya Iyer");
     expect(screen.getByLabelText(/email address/i)).toHaveValue(ANANYA.email);
   });
@@ -117,10 +132,7 @@ describe("gating the flow behind authentication", () => {
     await user.type(within(dialog).getByLabelText(/password/i), ANANYA.password);
     await user.click(within(dialog).getByRole("button", { name: "Create Account" }));
 
-    // Phone is required, so the form will not submit without it.
-    await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
-    await user.type(screen.getByLabelText(/skills/i), "React");
-    await user.click(screen.getByRole("button", { name: "Generate" }));
+    await fillAndGenerate(user);
 
     // The preview marks the active template with aria-pressed.
     const classic = await screen.findByRole("button", {
@@ -176,9 +188,7 @@ describe("templates and the portfolio", () => {
     await user.type(within(dialog).getByLabelText(/password/i), ANANYA.password);
     await user.click(within(dialog).getByRole("button", { name: "Create Account" }));
 
-    await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
-    await user.type(screen.getByLabelText(/skills/i), "React, TypeScript");
-    await user.click(screen.getByRole("button", { name: "Generate" }));
+    await fillAndGenerate(user);
   }
 
   it("switches template without generating again", async () => {

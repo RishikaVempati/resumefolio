@@ -678,3 +678,62 @@ where it happens rather than in a troubleshooting section.
   config, env var names and verification commands are ready for him to run.
 - **Demo video, and moving the 29 Kanban cards.** Both are his to do.
 - **The repository is still private** and must be made public before submission.
+
+---
+
+## Slice 7 — The six-step wizard
+
+**Done means:** the form matches the spec's screenshots — a stepper with a progress bar,
+Next/Previous, and per-step validation.
+
+### What was built
+
+`ResumeForm` becomes a wizard over the same six sections: Personal, Education, Skills,
+Projects, Experience, Certifications. `EMPTY_FORM` and every transform in `formUpdates.js`
+are untouched — this is a change to how the fields are presented, not to the data.
+
+| Decision | Why |
+|---|---|
+| Next and Generate are both `submit` | The browser then validates the current step's required fields for free. Doing it by hand means reimplementing what the platform already does |
+| Progress is `stepIndex / 6` | Step 1 reads 0%, step 6 reads 83%, matching the spec's screenshots exactly |
+| Only completed steps are clickable | Jumping ahead would skip the required fields on Personal |
+| Optional steps say so | "Nothing added yet. This step is optional." — otherwise an empty step looks broken |
+| Legend is visually hidden | A two-line `<legend>` breaks the fieldset's border cutout; the visible heading is a normal block and the legend stays for screen readers |
+
+### How it was tested
+
+```bash
+npm test
+npm run build
+npm run dev     # then clicked all six steps in Chrome
+```
+
+### Result
+
+```
+Tests  56 passed (56)
+build  ✓ built in 59ms
+```
+
+In the browser:
+
+| Step | Observed |
+|---|---|
+| 1 | "Step 1 / 6 — Personal", **0%**, dot 1 filled, Next shown, Generate absent |
+| Next with Phone empty | **Did not advance** — the browser focused the empty required field |
+| 6 | "Step 6 / 6 — Certifications", **83%**, ticks on steps 1–5, **Generate Resume** |
+
+New tests: starts at step 1 and 0%; will not advance while a required field is empty
+(TC06, now enforced per step rather than only at the end); advances once filled; reaches
+83% on the last step where Next becomes Generate; Previous keeps what was entered; step 1
+Previous leaves the form; a step not yet reached is disabled.
+
+The existing form tests were rewritten around a `goTo(step)` helper, since fields that
+used to be on one page are now spread across six.
+
+### Known limitations
+
+- Progress counts steps visited, not fields completed, so skipping optional steps still
+  shows 83% at the end.
+- No draft persistence: a refresh mid-wizard loses everything, same as before.
+- The step dots are small tap targets on a phone.
