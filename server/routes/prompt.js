@@ -13,6 +13,15 @@ Rules, in order of importance:
 6. achievements: only genuine standouts already present in the input. An empty list is
    a valid answer.`;
 
+const LABELS = {
+  name: "name",
+  email: "email",
+  phone: "phone",
+  address: "location",
+  linkedin: "LinkedIn",
+  github: "GitHub",
+};
+
 /** Sections with nothing in them are left out, so the model is not invited to fill them. */
 function section(title, lines) {
   return lines.length ? [`${title}:`, ...lines, ""] : [];
@@ -21,7 +30,7 @@ function section(title, lines) {
 function personLines(personal) {
   return Object.entries(personal)
     .filter(([, value]) => value?.trim())
-    .map(([key, value]) => `- ${key}: ${value.trim()}`);
+    .map(([key, value]) => `- ${LABELS[key] ?? key}: ${value.trim()}`);
 }
 
 /**

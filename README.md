@@ -27,7 +27,7 @@ Built in deployable slices. Current: **slice 0 — scaffold**.
 
 | Layer | Choice |
 |---|---|
-| Frontend | React on Vite (`client/`) |
+| Frontend | React on Vite (repo root) |
 | Backend | Node + Express (`server/`), routes under `/api` |
 | AI | Google Gemini, called only from the backend |
 | Config | dotenv |
@@ -45,10 +45,9 @@ npm install
 npm run dev                 # http://localhost:3001
 ```
 
-Frontend:
+Frontend, from the repo root:
 
 ```bash
-cd client
 npm install
 npm run dev                 # http://localhost:5173
 ```
@@ -57,7 +56,7 @@ Verify the two are talking:
 
 ```bash
 curl -s http://localhost:3001/api/health
-# {"status":"ok","model":"gemini-3.6-flash","apiKeyConfigured":true}
+# {"status":"ok","model":"gemini-3.5-flash-lite","apiKeyConfigured":true}
 ```
 
 `apiKeyConfigured: false` means `server/.env` has no `GEMINI_API_KEY`.
@@ -75,7 +74,7 @@ and goes to GitHub.
 
 - **Model.** The spec names `gemini-1.5-flash`. It returns
   `404 models/gemini-1.5-flash is not found for API version v1beta` on a current key, so
-  this project uses **`gemini-3.6-flash`**, verified with a real call. The model is
+  this project uses **`gemini-3.5-flash-lite`**, verified with a real call (`gemini-3.6-flash` also works but was ~5x slower). The model is
   configured through `GEMINI_MODEL`, not hardcoded, so changing it is a one-line edit.
 - Thinking will be set to `LOW` for generation. Measured on this key: default thinking
   spent 314 thinking tokens and returned 503 after 34.9s under load, versus 1.0s and 50

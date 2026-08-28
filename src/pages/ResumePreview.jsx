@@ -55,9 +55,8 @@ export default function ResumePreview({
         <article className={`resume resume--${selectedTemplate}`}>
           <header>
             <h1>{personal.name}</h1>
-            {personal.title && <p className="role">{personal.title}</p>}
             <p className="contact">
-              {[personal.email, personal.phone, personal.location, personal.links]
+              {[personal.email, personal.phone, personal.address, personal.linkedin, personal.github]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

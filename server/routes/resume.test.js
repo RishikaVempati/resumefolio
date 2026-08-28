@@ -10,9 +10,9 @@ const FORM = {
     name: "Ananya Iyer",
     email: "ananya.iyer@example.in",
     phone: "+91 98450 12345",
-    location: "Bengaluru, Karnataka",
-    title: "Frontend Developer",
-    links: "github.com/ananyaiyer",
+    address: "Bengaluru, Karnataka",
+    linkedin: "https://linkedin.com/in/ananyaiyer",
+    github: "https://github.com/ananyaiyer",
   },
   education: [
     {
@@ -111,9 +111,9 @@ describe("buildPrompt", () => {
   });
 
   it("leaves out blank personal fields", () => {
-    const form = { ...FORM, personal: { ...FORM.personal, phone: "   " } };
+    const form = { ...FORM, personal: { ...FORM.personal, github: "   " } };
 
-    assert.ok(!buildPrompt(form).includes("phone"));
+    assert.ok(!buildPrompt(form).includes("GitHub"));
   });
 });
 
@@ -169,7 +169,7 @@ function serverWith(client) {
 
 async function post(server, body) {
   const { port } = server.address();
-  const response = await fetch(`http://127.0.0.1:${port}/api/resume`, {
+  const response = await fetch(`http://127.0.0.1:${port}/api/generate-resume`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -177,7 +177,7 @@ async function post(server, body) {
   return { status: response.status, body: await response.json() };
 }
 
-describe("POST /api/resume", () => {
+describe("POST /api/generate-resume", () => {
   let server;
   let client;
 
