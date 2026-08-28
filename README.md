@@ -10,12 +10,12 @@ PDF upload → text extraction → LLM structured parse → JSON → HTML templa
 
 ## Status
 
-Built in deployable slices. Current: **slice 0 — skeleton deployed**.
+Built in deployable slices. Current: **slice 2 — LLM parse**.
 
 | # | Slice | State |
 |---|---|---|
 | 0 | FastAPI app, `/health`, upload page, Dockerfile | ✅ |
-| 1 | Upload → PDF text extraction | ☐ |
+| 1 | Upload → PDF text extraction | ✅ |
 | 2 | LLM parse behind a `ResumeParser` interface | ☐ |
 | 3 | Full schema + portfolio template | ☐ |
 | 4 | Validation, rate limiting, tests, CI | ☐ |
@@ -52,3 +52,4 @@ half-working surface. Everything cut is listed below rather than hidden.
 - **Render free tier cold starts.** The service sleeps after ~15 min idle and takes
   30–50s to wake. Fix is a paid instance.
 - **PDF only.** No DOCX, no plain text.
+- **No OCR.** `pdfplumber` reads embedded text; a scanned resume is rejected with a 422.
