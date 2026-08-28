@@ -1,0 +1,166 @@
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import App from "./App";
+import { register, signOut } from "./auth";
+
+// The auth flow must not depend on Gemini being reachable.
+vi.mock("./api", () => ({
+  getHealth: vi.fn().mockResolvedValue({ status: "ok" }),
+  generateResume: vi.fn().mockResolvedValue({
+    summary: "Generated summary.",
+    about: "Generated about.",
+    experience: [],
+    projects: [],
+    skills: [],
+    achievements: [],
+  }),
+}));
+
+const ANANYA = {
+  name: "Ananya Iyer",
+  email: "ananya.iyer@example.in",
+  password: "kirana123",
+};
+
+beforeEach(() => {
+  localStorage.clear();
+});
+
+const currentPage = () =>
+  screen.getByRole("heading", { level: 1 }).textContent;
+
+describe("gating the flow behind authentication", () => {
+  it('opens the modal in signup mode when "Get Started" is clicked signed out', async () => {
+    // Spec TC03.
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Get Started" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("tab", { name: "Sign Up" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    // Still on home — the gate held.
+    expect(currentPage()).toMatch(/turn what you know/i);
+  });
+
+  it("does not open the modal when a user is already signed in", async () => {
+    register(ANANYA);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Get Started" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(currentPage()).toMatch(/your details/i);
+  });
+
+  it("sends the user to the page they were heading for, pre-filled", async () => {
+    // Spec TC02.
+    register(ANANYA);
+    signOut();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Get Started" }));
+
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("tab", { name: "Login" }));
+    await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);
+    await user.type(within(dialog).getByLabelText(/password/i), ANANYA.password);
+    await user.click(within(dialog).getByRole("button", { name: "Log In" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(currentPage()).toMatch(/your details/i);
+    expect(screen.getByLabelText(/full name/i)).toHaveValue("Ananya Iyer");
+    expect(screen.getByLabelText(/email address/i)).toHaveValue(ANANYA.email);
+  });
+
+  it("remembers a template chosen before signing in", async () => {
+    // Spec TC04, now with the gate in place: the choice must survive the modal.
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /classic/i }));
+
+    const dialog = screen.getByRole("dialog");
+    await user.type(within(dialog).getByLabelText(/full name/i), ANANYA.name);
+    await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);
+    await user.type(within(dialog).getByLabelText(/password/i), ANANYA.password);
+    await user.click(within(dialog).getByRole("button", { name: "Create Account" }));
+
+    // Phone is required, so the form will not submit without it.
+    await user.type(screen.getByLabelText(/phone number/i), "+91 98450 12345");
+    await user.type(screen.getByLabelText(/skills/i), "React");
+    await user.click(screen.getByRole("button", { name: "Generate" }));
+
+    // The preview marks the active template with aria-pressed.
+    const classic = await screen.findByRole("button", {
+      name: "Classic",
+      pressed: true,
+    });
+    expect(classic).toBeInTheDocument();
+  });
+});
+
+describe("signing up", () => {
+  it("shows the reason when signup is rejected and stays open", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    const dialog = screen.getByRole("dialog");
+    await user.type(within(dialog).getByLabelText(/full name/i), ANANYA.name);
+    await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);
+    await user.type(within(dialog).getByLabelText(/password/i), "short");
+    await user.click(within(dialog).getByRole("button", { name: "Create Account" }));
+
+    expect(within(dialog).getByRole("alert")).toHaveTextContent(/at least 6/i);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("does not overwrite details the user already typed", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Sign up first so the form is reachable, then edit the name.
+    await user.click(screen.getByRole("button", { name: "Get Started" }));
+    let dialog = screen.getByRole("dialog");
+    await user.type(within(dialog).getByLabelText(/full name/i), ANANYA.name);
+    await user.type(within(dialog).getByLabelText(/email address/i), ANANYA.email);
+    await user.type(within(dialog).getByLabelText(/password/i), ANANYA.password);
+    await user.click(within(dialog).getByRole("button", { name: "Create Account" }));
+
+    const nameField = screen.getByLabelText(/full name/i);
+    await user.clear(nameField);
+    await user.type(nameField, "A. Iyer");
+
+    expect(nameField).toHaveValue("A. Iyer");
+  });
+});
+
+describe("session persistence", () => {
+  it("stays signed in across a remount", async () => {
+    register(ANANYA);
+    const { unmount } = render(<App />);
+    unmount();
+
+    render(<App />);
+
+    expect(screen.getByText("Ananya Iyer")).toBeInTheDocument();
+  });
+
+  it("signing out returns to home and clears the name", async () => {
+    register(ANANYA);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /sign out/i }));
+
+    expect(screen.queryByText("Ananya Iyer")).toBeNull();
+    expect(currentPage()).toMatch(/turn what you know/i);
+  });
+});

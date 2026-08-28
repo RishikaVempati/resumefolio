@@ -11,15 +11,15 @@ sign up → structured form → Gemini generates content → resume preview / po
 
 ## Status
 
-Built in deployable slices. Current: **slice 0 — scaffold**.
+Built in deployable slices. Current: **slice 5 — templates and portfolio**.
 
 | # | Slice | State |
 |---|---|---|
 | 0 | Vite React client + Express server, `/api/health` | ✅ |
-| 1 | `EMPTY_FORM` + page state machine (home/form/preview/portfolio) | ☐ |
-| 2 | `ResumeForm` — six sections, dynamic arrays | ☐ |
-| 3 | `/api/resume` + Gemini generation | ☐ |
-| 4 | `AuthModal`, LocalStorage sessions, `pendingPage` gating | ☐ |
+| 1 | `EMPTY_FORM` + page state machine (home/form/preview/portfolio) | ✅ |
+| 2 | `ResumeForm` — six sections, dynamic arrays | ✅ |
+| 3 | `/api/generate-resume` + Gemini generation, with retry | ✅ |
+| 4 | `AuthModal`, LocalStorage sessions, `pendingPage` gating | ✅ |
 | 5 | Multiple templates + portfolio preview | ☐ |
 | 6 | Error handling, tests, deployment | ☐ |
 
@@ -82,9 +82,12 @@ and goes to GitHub.
 
 ## Known limitations
 
-- **LocalStorage "auth" is not real authentication.** No server-side session, no password
-  hashing, and anyone with the browser can read it. It satisfies the spec and is fine for
-  a capstone; it would be wrong for real users.
+- **LocalStorage "auth" is not real authentication.** Accounts live in the visitor's own
+  browser under the `registered_users` key, passwords included, in plain text. Anyone can
+  open DevTools, read every account and sign in as any of them. There is no server, no
+  session and no hashing. The spec asks for exactly this ("LocalStorage-based session
+  management") and for a capstone it is the right scope — but it is a demonstration of a
+  sign-in flow, not a security boundary, and must not be reused for real users.
 - **No persistence.** Generated content lives in React state. A refresh loses it.
 - **Render free tier cold starts** — the backend sleeps after ~15 min idle and takes
   30–50s to wake. Warm it before recording the demo.
