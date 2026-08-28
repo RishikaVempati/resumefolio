@@ -45,7 +45,13 @@ const FORM = {
 
 const GENERATED = {
   summary: "Frontend developer with three years building payment interfaces.",
+  careerObjective: "Seeking a frontend role on a payments product.",
   about: "I build interfaces for payments products.",
+  keyCompetencies: ["Payments interfaces", "Performance tuning"],
+  technicalSkills: ["React", "TypeScript"],
+  languages: [],
+  tools: ["Git"],
+  softSkills: [],
   experience: [
     {
       role: "Frontend Developer",
@@ -57,7 +63,6 @@ const GENERATED = {
   projects: [
     { name: "Kirana Ledger", description: "Billing for shops", tech: "React Native" },
   ],
-  skills: ["React", "TypeScript"],
   achievements: [],
 };
 
@@ -129,8 +134,20 @@ describe("validateGenerated", () => {
   it("rejects an array field that came back as something else", () => {
     // Observed in practice: a schema-constrained response is not a guarantee.
     assert.match(
-      validateGenerated({ ...GENERATED, skills: "React, TypeScript" }),
+      validateGenerated({ ...GENERATED, technicalSkills: "React, TypeScript" }),
       /expected an array/i
+    );
+  });
+
+  it("requires the career objective", () => {
+    assert.match(validateGenerated({ ...GENERATED, careerObjective: "" }), /careerObjective/i);
+  });
+
+  it("accepts empty skill categories", () => {
+    // Someone who listed no spoken languages must not be a validation failure.
+    assert.equal(
+      validateGenerated({ ...GENERATED, languages: [], softSkills: [], tools: [] }),
+      null
     );
   });
 
@@ -295,7 +312,7 @@ describe("POST /api/generate-resume", () => {
   });
 
   it("rejects a response whose shape is wrong", async () => {
-    server = serverWith(fakeClient({ ...GENERATED, skills: "React" }));
+    server = serverWith(fakeClient({ ...GENERATED, technicalSkills: "React" }));
 
     const { status, body } = await post(server, FORM);
 

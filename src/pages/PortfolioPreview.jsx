@@ -22,6 +22,15 @@ export default function PortfolioPreview({ formData, generated, onBack }) {
     );
   }
 
+  // The flat skills list is gone from the generated shape; the portfolio shows
+  // everything the candidate listed, in the order a reader cares about.
+  const skills = [
+    ...generated.technicalSkills,
+    ...generated.tools,
+    ...generated.languages,
+    ...generated.softSkills,
+  ];
+
   const links = [
     personal.linkedin && { label: "LinkedIn", href: personal.linkedin },
     personal.github && { label: "GitHub", href: personal.github },
@@ -60,11 +69,11 @@ export default function PortfolioPreview({ formData, generated, onBack }) {
           <p className="portfolio__about">{generated.about}</p>
         </section>
 
-        {generated.skills.length > 0 && (
+        {skills.length > 0 && (
           <section className="portfolio__section">
             <h2>Skills</h2>
             <ul className="chips">
-              {generated.skills.map((skill, index) => (
+              {skills.map((skill, index) => (
                 <li key={index}>{skill}</li>
               ))}
             </ul>

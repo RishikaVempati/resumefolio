@@ -9,9 +9,28 @@ Rules, in order of importance:
 3. Keep the candidate's own words for names, companies, institutions and technologies.
    Do not translate, expand or "correct" them.
 4. summary: two or three sentences, third person, no pronouns, for the top of a resume.
-5. about: one warmer paragraph in the first person, for a portfolio's About Me.
-6. achievements: only genuine standouts already present in the input. An empty list is
-   a valid answer.`;
+5. careerObjective: two sentences on the kind of role they are seeking, grounded in what
+   they already do. Do not name a company or a job title they have not mentioned.
+6. about: one warmer paragraph in the first person, for a portfolio's About Me.
+7. achievements: only genuine standouts already present in the input. An empty list is
+   a valid answer.
+
+Sorting their skills:
+
+8. technicalSkills, tools, languages and softSkills sort the technologies the candidate
+   named ANYWHERE in the input — the skills list, and also the tech used on their
+   projects, in their roles, and in their certifications. A technology they clearly work
+   with belongs on the resume even if they forgot to repeat it in the skills list.
+   Every skill from the skills list must appear in exactly one category, and nothing may
+   be added that appears nowhere in the input.
+   - technicalSkills: programming languages, frameworks, libraries, databases
+   - tools: platforms and software, for example Git, AWS, Docker, Figma
+   - languages: spoken languages ONLY, for example Hindi, Tamil, English. If they listed
+     none, return an empty list. Never put a programming language here.
+   - softSkills: interpersonal strengths, for example communication, mentoring
+   If a skill does not clearly fit, put it in technicalSkills rather than dropping it.
+9. keyCompetencies: short capability labels, three to eight words at most each, drawn
+   only from the skills and experience supplied. These are a summary, not new claims.`;
 
 const LABELS = {
   name: "name",

@@ -678,3 +678,95 @@ where it happens rather than in a troubleshooting section.
   config, env var names and verification commands are ready for him to run.
 - **Demo video, and moving the 29 Kanban cards.** Both are his to do.
 - **The repository is still private** and must be made public before submission.
+
+---
+
+## Slice 8 — The fuller resume
+
+**Done means:** the resume shows the sections the spec's screenshots show, from one
+Gemini call, with nothing invented.
+
+### What was built
+
+The generated schema grows from six fields to eleven:
+
+| Added | Feeds |
+|---|---|
+| `careerObjective` | Main column, under the summary |
+| `keyCompetencies` | Main column, as chips |
+| `technicalSkills`, `tools`, `languages`, `softSkills` | Sidebar, four separate blocks |
+
+The flat `skills` list is gone. The portfolio composes its chips from the four
+categories instead, so the same data serves both pages without duplication.
+
+`ResumePreview` becomes a real two-column layout: sidebar with the skill categories,
+education and certifications; main column with Professional Summary, Career Objective,
+Key Competencies, Work Experience and Projects. A `ListSection` helper renders nothing
+at all when a list is empty, so someone who listed no spoken languages does not get an
+empty heading.
+
+### The categories are a sorting, not new information
+
+Splitting one skills list into four raises the obvious risk: the model filling gaps.
+The first run produced `React Native` and `AWS` in the categories, neither of which was
+in the skills list — but both **were** in the input: `React Native` from the project's
+tech field, `AWS` from the certification. Not invention, but also not what the prompt
+had asked for.
+
+Rather than tightening the prompt to forbid it, the instruction now describes what is
+actually wanted: technologies named **anywhere** in the input may be categorised —
+skills, project tech, roles, certifications — and nothing else may be added. A
+technology someone clearly works with belongs on their resume even if they forgot to
+repeat it in the skills box.
+
+Verified after the change by checking every categorised entry against the submitted
+form:
+
+```
+technicalSkills  ['React', 'TypeScript', 'PostgreSQL', 'React Native', 'SQLite']
+tools            ['Git', 'AWS']
+languages        ['Hindi', 'Tamil']
+softSkills       ['Mentoring']
+
+anything NOT traceable to the form: none
+```
+
+`SQLite` was picked up from the project too. `Hindi` and `Tamil` went to languages and
+not to technical skills, which is the categorisation the prompt is most likely to get
+wrong.
+
+### How it was tested
+
+```bash
+npm --prefix server test
+npm test
+npm run dev     # then a real generation in Chrome
+```
+
+### Result
+
+```
+server:  ℹ tests 36   ℹ pass 36   ℹ fail 0
+client:  Tests 50 passed (50)
+```
+
+Live generation, 8.8s, rendered in both templates. Modern shows the sidebar and main
+column side by side; Classic stacks them.
+
+### A bug found by looking
+
+In Classic the sidebar rendered **before** the Professional Summary — the aside comes
+first in the DOM so Modern can place it in the left column, and a single-column layout
+inherits that order. A resume that opens with a skills inventory rather than a summary
+reads badly. Fixed with `order` on the flex children, in Classic and in Modern's mobile
+breakpoint. Every test passed throughout: they assert on content, not sequence.
+
+### Known limitations
+
+- `keyCompetencies` is the one field that is genuinely derived rather than restated. It
+  is constrained to the supplied input, but it is the most likely place for drift, and
+  worth a glance before sharing a generated resume.
+- Language detection depends on the model recognising a spoken language. An unusual one
+  listed among frameworks may land in `technicalSkills`, which the prompt makes the
+  deliberate fallback.
+- Still no Resume Score, which appears in the screenshots but in no written story.

@@ -1,11 +1,26 @@
 import { TEMPLATES } from "../templates";
 
+/** A sidebar block that renders nothing when the list is empty. */
+function ListSection({ title, items, className = "" }) {
+  if (!items?.length) return null;
+  return (
+    <section>
+      <h2>{title}</h2>
+      <ul className={`plain ${className}`}>
+        {items.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /**
  * The generated resume, in the chosen template.
  *
  * Both templates render the same sections from the same data — they differ in
- * layout and type, not content. Modern puts contact details and the short lists
- * in a sidebar; Classic runs everything down one centred column.
+ * layout and type, not content. Empty sections disappear entirely rather than
+ * leaving a heading with nothing under it.
  */
 export default function ResumePreview({
   formData,
@@ -21,6 +36,14 @@ export default function ResumePreview({
   const { personal } = formData;
   const contact = [personal.email, personal.phone, personal.address].filter(Boolean);
   const links = [personal.linkedin, personal.github].filter(Boolean);
+
+  // The subtitle under the name comes from their most recent qualification,
+  // which is what the spec's screenshot shows there.
+  const headline = formData.education[0]
+    ? [formData.education[0].degree, formData.education[0].field]
+        .filter(Boolean)
+        .join(" — ")
+    : "";
 
   return (
     <main className="wide">
@@ -65,21 +88,79 @@ export default function ResumePreview({
       {generated && (
         <article className={`resume resume--${selectedTemplate}`}>
           <header className="resume__header">
-            <h1>{personal.name}</h1>
-            {contact.length > 0 && <p className="resume__contact">{contact.join(" · ")}</p>}
-            {links.length > 0 && <p className="resume__contact">{links.join(" · ")}</p>}
+            <div>
+              <h1>{personal.name}</h1>
+              {headline && <p className="resume__headline">{headline}</p>}
+            </div>
+            <div className="resume__meta">
+              {contact.length > 0 && <p>{contact.join(" · ")}</p>}
+              {links.length > 0 && <p>{links.join(" · ")}</p>}
+            </div>
           </header>
 
           <div className="resume__body">
+            <aside className="resume__aside">
+              <ListSection title="Technical Skills" items={generated.technicalSkills} />
+              <ListSection title="Tools & Tech" items={generated.tools} />
+              <ListSection title="Languages" items={generated.languages} />
+              <ListSection title="Soft Skills" items={generated.softSkills} />
+
+              {formData.education.length > 0 && (
+                <section>
+                  <h2>Education</h2>
+                  {formData.education.map((entry, index) => (
+                    <div className="record" key={index}>
+                      <h3>{[entry.degree, entry.field].filter(Boolean).join(", ")}</h3>
+                      <p className="record__org">
+                        {[entry.institution, entry.dates, entry.grade]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {formData.certifications.length > 0 && (
+                <section>
+                  <h2>Certifications</h2>
+                  {formData.certifications.map((entry, index) => (
+                    <div className="record" key={index}>
+                      <h3>{entry.name}</h3>
+                      <p className="record__org">
+                        {[entry.issuer, entry.date].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                  ))}
+                </section>
+              )}
+            </aside>
+
             <div className="resume__main">
               <section>
                 <h2>Professional Summary</h2>
                 <p>{generated.summary}</p>
               </section>
 
+              <section>
+                <h2>Career Objective</h2>
+                <p>{generated.careerObjective}</p>
+              </section>
+
+              {generated.keyCompetencies.length > 0 && (
+                <section>
+                  <h2>Key Competencies</h2>
+                  <ul className="chips chips--quiet">
+                    {generated.keyCompetencies.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
               {generated.experience.length > 0 && (
                 <section>
-                  <h2>Experience</h2>
+                  <h2>Work Experience</h2>
                   {generated.experience.map((entry, index) => (
                     <div className="record" key={index}>
                       <div className="record__head">
@@ -112,49 +193,6 @@ export default function ResumePreview({
                 </section>
               )}
             </div>
-
-            <aside className="resume__aside">
-              {generated.skills.length > 0 && (
-                <section>
-                  <h2>Skills</h2>
-                  <ul className="plain">
-                    {generated.skills.map((skill, index) => (
-                      <li key={index}>{skill}</li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {formData.education.length > 0 && (
-                <section>
-                  <h2>Education</h2>
-                  {formData.education.map((entry, index) => (
-                    <div className="record" key={index}>
-                      <h3>{[entry.degree, entry.field].filter(Boolean).join(", ")}</h3>
-                      <p className="record__org">
-                        {[entry.institution, entry.dates, entry.grade]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    </div>
-                  ))}
-                </section>
-              )}
-
-              {formData.certifications.length > 0 && (
-                <section>
-                  <h2>Certifications</h2>
-                  {formData.certifications.map((entry, index) => (
-                    <div className="record" key={index}>
-                      <h3>{entry.name}</h3>
-                      <p className="record__org">
-                        {[entry.issuer, entry.date].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                  ))}
-                </section>
-              )}
-            </aside>
           </div>
         </article>
       )}

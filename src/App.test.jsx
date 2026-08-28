@@ -9,7 +9,13 @@ vi.mock("./api", () => ({
   getHealth: vi.fn().mockResolvedValue({ status: "ok" }),
   generateResume: vi.fn().mockResolvedValue({
     summary: "Generated summary.",
+    careerObjective: "Generated objective.",
     about: "Generated about.",
+    keyCompetencies: ["Payments interfaces"],
+    technicalSkills: ["React", "TypeScript"],
+    languages: ["Hindi"],
+    tools: ["Git"],
+    softSkills: ["Mentoring"],
     experience: [
       {
         role: "Frontend Developer",
@@ -21,7 +27,6 @@ vi.mock("./api", () => ({
     projects: [
       { name: "Kirana Ledger", description: "Billing for shops", tech: "React Native" },
     ],
-    skills: ["React", "TypeScript"],
     achievements: ["Cut page load to under a second"],
   }),
 }));
