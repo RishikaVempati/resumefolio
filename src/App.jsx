@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { generateResume } from "./api";
 import { getCurrentUser, setCurrentUser as persistUser, signOut } from "./auth";
+import { DEFAULT_TEMPLATE } from "./templates";
 import AuthModal from "./components/AuthModal";
 import { EMPTY_FORM } from "./formShape";
 import Home from "./pages/Home";
@@ -18,10 +19,26 @@ export {
   EMPTY_PROJECT,
 } from "./formShape";
 
+/** Fill in what we know, without overwriting anything already typed. */
+function withUserDetails(form, user) {
+  if (!user) return form;
+  return {
+    ...form,
+    personal: {
+      ...form.personal,
+      name: form.personal.name || user.name,
+      email: form.personal.email || user.email,
+    },
+  };
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
-  const [formData, setFormData] = useState(EMPTY_FORM);
-  const [selectedTemplate, setSelectedTemplate] = useState("modern");
+  // Seeded from the signed-in user, not just EMPTY_FORM: someone who signed in
+  // on a previous visit never passes through handleAuthSuccess, and would
+  // otherwise be shown an empty form with their details already known.
+  const [formData, setFormData] = useState(() => withUserDetails(EMPTY_FORM, getCurrentUser()));
+  const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE);
 
   // Authentication state. Named as the spec's App.jsx snippet names them.
   // currentUser is read lazily so LocalStorage is not re-read on every render.
@@ -60,14 +77,7 @@ export default function App() {
     persistUser(user);
     setIsAuthOpen(false);
 
-    setFormData((prev) => ({
-      ...prev,
-      personal: {
-        ...prev.personal,
-        name: prev.personal.name || user.name,
-        email: prev.personal.email || user.email,
-      },
-    }));
+    setFormData((prev) => withUserDetails(prev, user));
 
     setPage(pendingPage ?? "form");
     setPendingPage(null);
@@ -150,7 +160,7 @@ export default function App() {
 
   return (
     <>
-      <header>
+      <header className="app-header">
         <strong>Auto Resume + Portfolio Builder</strong>
         <span className="header-actions">
           {currentUser ? (

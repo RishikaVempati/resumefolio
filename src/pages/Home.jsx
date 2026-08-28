@@ -1,7 +1,4 @@
-const TEMPLATES = [
-  { id: "classic", name: "Classic", blurb: "Serif headings, generous margins." },
-  { id: "modern", name: "Modern", blurb: "Sans-serif, accent rule, tight grid." },
-];
+import { TEMPLATES } from "../templates";
 
 /**
  * Slice 1: the landing page's job in the state machine — pick a template, or just
@@ -10,17 +7,22 @@ const TEMPLATES = [
 export default function Home({ selectedTemplate, onStart, onSelectTemplate }) {
   return (
     <main>
-      <h1>Turn what you know about yourself into a resume</h1>
-      <p>
-        Fill in a form. Gemini writes the content. Preview it as a resume or a
-        portfolio.
-      </p>
+      <section className="hero">
+        <p className="eyebrow">Powered by Google Gemini</p>
+        <h1>
+          Turn what you know about yourself into a <em>resume</em>
+        </h1>
+        <p className="lede">
+          Fill in one form. Gemini writes the content from your own details — no
+          invented employers, no invented numbers. Preview it as a resume or as a
+          portfolio you can share.
+        </p>
+        <button type="button" className="primary" onClick={onStart}>
+          Get Started
+        </button>
+      </section>
 
-      <button type="button" onClick={onStart}>
-        Get Started
-      </button>
-
-      <h2>Templates</h2>
+      <h2 className="section-title">Templates</h2>
       <ul className="templates">
         {TEMPLATES.map((template) => (
           <li key={template.id}>
@@ -29,8 +31,13 @@ export default function Home({ selectedTemplate, onStart, onSelectTemplate }) {
               onClick={() => onSelectTemplate(template.id)}
               aria-pressed={selectedTemplate === template.id}
             >
+              <span className={`swatch swatch--${template.id}`} aria-hidden="true">
+                <span className="swatch__rule" />
+                <span className="swatch__line" />
+                <span className="swatch__line swatch__line--short" />
+              </span>
               <strong>{template.name}</strong>
-              <span>{template.blurb}</span>
+              <span className="blurb">{template.blurb}</span>
             </button>
           </li>
         ))}

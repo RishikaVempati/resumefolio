@@ -11,7 +11,7 @@ sign up → structured form → Gemini generates content → resume preview / po
 
 ## Status
 
-Built in deployable slices. Current: **slice 5 — templates and portfolio**.
+Built in deployable slices. Current: **slice 6 — hardening and deployment**.
 
 | # | Slice | State |
 |---|---|---|
@@ -20,7 +20,7 @@ Built in deployable slices. Current: **slice 5 — templates and portfolio**.
 | 2 | `ResumeForm` — six sections, dynamic arrays | ✅ |
 | 3 | `/api/generate-resume` + Gemini generation, with retry | ✅ |
 | 4 | `AuthModal`, LocalStorage sessions, `pendingPage` gating | ✅ |
-| 5 | Multiple templates + portfolio preview | ☐ |
+| 5 | Multiple templates + portfolio preview | ✅ |
 | 6 | Error handling, tests, deployment | ☐ |
 
 ## Stack
