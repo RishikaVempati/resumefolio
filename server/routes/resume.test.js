@@ -139,14 +139,18 @@ describe("validateGenerated", () => {
   });
 });
 
-/** A stand-in for GoogleGenAI that records the request and returns a canned reply. */
-function fakeClient(result) {
+/**
+ * A stand-in for GoogleGenAI. `results` is played back one per call, so a test
+ * can say "fail, fail, then succeed" and assert the route retried.
+ */
+function fakeClient(...results) {
   const calls = [];
   return {
     calls,
     models: {
       generateContent: async (request) => {
         calls.push(request);
+        const result = results[Math.min(calls.length - 1, results.length - 1)];
         if (result instanceof Error) throw result;
         return { text: JSON.stringify(result) };
       },
@@ -154,17 +158,27 @@ function fakeClient(result) {
   };
 }
 
-function serverWith(client) {
+// Retries with no real waiting, so the suite stays instant.
+const INSTANT_RETRY = { sleep: async () => {}, now: () => 0 };
+
+// Every server made by a test, closed in after(). A test that fails before its
+// own close() would otherwise leave a listening handle and hang the runner —
+// which is exactly what happened while writing these.
+const servers = [];
+
+function serverWith(client, retryOptions = INSTANT_RETRY) {
   const app = express();
   app.use(express.json());
-  app.use("/api", createResumeRouter({ client }));
+  app.use("/api", createResumeRouter({ client, retryOptions }));
   app.use((err, req, res, next) => {
     res.status(err.status || 500).json({
       error: err.message,
       details: err.details ?? null,
     });
   });
-  return app.listen(0);
+  const server = app.listen(0);
+  servers.push(server);
+  return server;
 }
 
 async function post(server, body) {
@@ -185,7 +199,7 @@ describe("POST /api/generate-resume", () => {
     process.env.GEMINI_MODEL = "gemini-3.6-flash";
   });
 
-  after(() => server?.close());
+  after(() => servers.forEach((s) => s.close()));
 
   it("returns generated content and calls the model correctly", async () => {
     client = fakeClient(GENERATED);
@@ -217,24 +231,62 @@ describe("POST /api/generate-resume", () => {
     server.close();
   });
 
-  it("reports a rate limit as retryable", async () => {
-    const rateLimited = Object.assign(new Error("quota"), { status: 429 });
-    server = serverWith(fakeClient(rateLimited));
+  it("retries a transient 503 and succeeds", async () => {
+    const busy = Object.assign(new Error("high demand"), { status: 503 });
+    client = fakeClient(busy, busy, GENERATED);
+    server = serverWith(client);
+
+    const { status, body } = await post(server, FORM);
+
+    assert.equal(status, 200);
+    assert.equal(body.generated.summary, GENERATED.summary);
+    assert.equal(client.calls.length, 3, "should have retried twice");
+
+    server.close();
+  });
+
+  it("gives up after the attempt limit and says how many it tried", async () => {
+    const busy = Object.assign(new Error("high demand"), { status: 503 });
+    client = fakeClient(busy);
+    server = serverWith(client);
 
     const { status, body } = await post(server, FORM);
 
     assert.equal(status, 503);
+    assert.equal(client.calls.length, 3, "default is three attempts");
+    assert.match(body.error, /after 3 attempts/);
     assert.match(body.details, /again/i);
 
     server.close();
   });
 
-  it("reports a retired model as not worth retrying", async () => {
-    const notFound = Object.assign(new Error("not found"), { status: 404 });
-    server = serverWith(fakeClient(notFound));
+  it("explains the daily cap when the quota is exhausted", async () => {
+    const exhausted = Object.assign(
+      new Error("Quota exceeded for metric: generate_content_free_tier_requests"),
+      { status: 429 }
+    );
+    client = fakeClient(exhausted);
+    server = serverWith(client);
 
     const { status, body } = await post(server, FORM);
 
+    assert.equal(status, 503);
+    assert.match(body.details, /20 requests per day/);
+    assert.equal(
+      client.calls.length,
+      1,
+      "an exhausted daily quota will not recover, so it must not be retried"
+    );
+  });
+
+  it("reports a retired model as not worth retrying", async () => {
+    const notFound = Object.assign(new Error("not found"), { status: 404 });
+    client = fakeClient(notFound);
+    server = serverWith(client);
+
+    const { status, body } = await post(server, FORM);
+
+    assert.equal(client.calls.length, 1, "a 404 must not be retried");
     assert.equal(status, 502);
     assert.match(body.error, /not available/i);
     assert.match(body.details, /GEMINI_MODEL/);
