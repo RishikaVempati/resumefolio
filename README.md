@@ -214,8 +214,4 @@ message says whether retrying will help.
 - **Render free tier cold starts** — the backend sleeps after ~15 min idle and takes
   30–50s to wake. Warm it before recording the demo.
 
-## History
 
-An earlier version of this repo implemented a different product — upload a PDF resume and
-extract its fields — built against a project brief that did not match the graded spec. It
-is preserved under the `pdf-approach-archived` tag.
