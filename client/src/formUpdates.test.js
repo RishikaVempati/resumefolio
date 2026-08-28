@@ -13,14 +13,14 @@ import {
 
 describe("setPersonalField", () => {
   it("sets one field and leaves the others alone", () => {
-    const form = setPersonalField(EMPTY_FORM, "name", "Grace Hopper");
+    const form = setPersonalField(EMPTY_FORM, "name", "Ananya Iyer");
 
-    expect(form.personal.name).toBe("Grace Hopper");
+    expect(form.personal.name).toBe("Ananya Iyer");
     expect(form.personal.email).toBe("");
   });
 
   it("does not mutate the form it was given", () => {
-    setPersonalField(EMPTY_FORM, "name", "Grace Hopper");
+    setPersonalField(EMPTY_FORM, "name", "Ananya Iyer");
 
     // React compares by identity — a mutation here would not re-render.
     expect(EMPTY_FORM.personal.name).toBe("");

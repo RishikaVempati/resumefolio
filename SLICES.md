@@ -369,8 +369,137 @@ Branch `slice-2-resume-form`.
 
 ---
 
-## Slice 3 — Gemini generation (not started)
+## Slice 3 — Gemini generation
 
-Planned: `server/routes/resume.js` mounted under `/api`, `POST /api/resume` formatting the
-form data into a prompt, calling Gemini with `thinking_level: LOW`, and returning generated
-content for `ResumePreview` to render.
+**Done means:** a real form submission produces real generated resume content on screen.
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `server/routes/resume.js` | `POST /api/resume`, mounted under `/api` |
+| `server/routes/prompt.js` | System instruction, prompt builder, request validation |
+| `server/routes/resumeSchema.js` | Response schema and validation of what comes back |
+| `server/routes/resume.test.js` | 16 tests, no network |
+| `client/src/api.js` | `generateResume()` |
+| `client/src/pages/ResumePreview.jsx` | Renders the generated resume |
+| `client/src/pages/PortfolioPreview.jsx` | Renders About Me, Skills, Projects, Achievements |
+| `client/src/App.jsx` | Holds generated content, loading and error state |
+
+**One call feeds both previews.** The response carries `summary` and `experience` for the
+resume, `about` and `achievements` for the portfolio, and shares the rest. Generating
+twice would double both the latency and the quota.
+
+**Generated content lives in `App.jsx`, not in `ResumePreview`.** The spec requires
+switching template or moving to the portfolio without losing content, so it has to sit
+above both pages.
+
+**Validation happens before the call.** A form with a name but nothing else is rejected
+with 400 and never reaches Gemini — spending quota to discover there is nothing to write
+from would be wasteful.
+
+The prompt omits empty sections entirely, so the model is not invited to fill them. The
+system instruction's first rule is that nothing may be invented.
+
+### The response is validated, not trusted
+
+`validateGenerated` checks the shape by hand even though the request declares a schema.
+That is not defensive habit: in the archived project, a schema-constrained response came
+back with fields the schema never declared. A declared schema is not a guarantee.
+
+### How it was tested
+
+```bash
+cd server && npm test          # node --test, no network
+cd client && npm test
+curl -s -X POST http://localhost:3001/api/resume \
+  -H 'Content-Type: application/json' -d @sample-form.json
+```
+
+### Result
+
+```
+server:  ℹ tests 16   ℹ pass 16   ℹ fail 0
+client:  Test Files 2 passed   Tests 26 passed
+```
+
+A real call with Indian sample data — Ananya Iyer, Bengaluru, PES University, Zeta
+Systems, Kirana Ledger — returned:
+
+```
+summary:  "Frontend Developer with experience building payments dashboards and web
+           applications using React, TypeScript, and Node.js..."
+about:    "I am a Frontend Developer based in Bengaluru with a background in Computer
+           Science from PES University..."
+bullets:  "Rebuilt the payments dashboard used by 40 merchants"
+          "Cut first page load from 4.2s to under a second"
+projects: "Kirana Ledger — Billing and khata app for neighbourhood shops"
+achievements: "Cut first page load from 4.2s to under a second at Zeta Systems"
+```
+
+Every fact traces to the input. The numbers (40 merchants, 4.2s) are the candidate's own,
+and no employer, tool or metric was invented.
+
+Validation, verified live:
+
+```
+POST with a name and nothing else → 400
+"Add at least one skill, project, role or qualification — there is nothing to write from yet."
+```
+
+CORS preflight now matches the options in the spec's screenshot:
+
+```
+Access-Control-Allow-Origin: http://localhost:5173
+Access-Control-Allow-Methods: GET,POST
+Access-Control-Allow-Headers: Content-Type
+```
+
+### The free tier has a hard daily cap
+
+Discovered by hitting it:
+
+```
+429 RESOURCE_EXHAUSTED
+"Quota exceeded for metric: generate_content_free_tier_requests, limit: 20,
+ model: gemini-3.6-flash"
+quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
+```
+
+**20 requests per day, per model, per project.** Two consequences:
+
+- The quota is *per model*, so switching `GEMINI_MODEL` gets a fresh allowance. That is a
+  workaround, not a fix.
+- Roughly 20 generations a day across all testing and demoing. The demo must be
+  rehearsed sparingly, and re-recording several times in one day will exhaust it.
+
+`GEMINI_MODEL` is now `gemini-3.5-flash-lite`: it answered in **7.8s** against
+`gemini-3.6-flash`'s **37.7s** on the same input, with output of comparable quality, and
+its quota bucket is untouched. `gemini-3.6-flash` remains a one-line switch.
+
+Latency measured through the SDK was far worse than the same request over raw REST
+(43.9s vs 1.9s with identical thinking-token counts), which points at throttling as the
+daily cap approached rather than at the SDK itself. Worth re-measuring on a fresh quota.
+
+`thinkingLevel: LOW` is set, and the tests assert it is sent.
+
+### Known limitations and follow-ups
+
+- **No retry or backoff.** A 429 or 503 surfaces as a 503 with "try again" and a button.
+  Automatic backoff belongs in slice 6.
+- One 503 "high demand" was seen from `gemini-3.5-flash-lite`; a manual retry 15s later
+  succeeded. The error path handled it correctly, which is itself a live test of it.
+- Generated content is lost on refresh. Persistence is out of scope.
+- Templates only change a CSS class so far; the two real designs are slice 5.
+- The spec contains **code snippets as images** that text extraction cannot read. The CORS
+  options above came from one. Others may exist and should be checked visually.
+
+Branch `slice-3-gemini-generation`.
+
+---
+
+## Slice 4 — Authentication (not started)
+
+Planned: `AuthModal` with signup and login, `currentUser` in LocalStorage read via a lazy
+`useState` initialiser, `handleStartFlow` gating, and `handleAuthSuccess` consuming
+`pendingPage`.

@@ -132,3 +132,93 @@ abbr {
 .actions {
   margin-top: 1.5rem;
 }
+
+.toolbar {
+  margin-bottom: 1.5rem;
+}
+
+.status {
+  color: #64748b;
+}
+
+.error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.resume,
+.portfolio {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 2rem;
+}
+
+.resume h1,
+.portfolio h1 {
+  margin: 0;
+}
+
+.role {
+  margin: 0.25rem 0;
+  color: #475569;
+}
+
+.contact {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0 0 1.5rem;
+}
+
+.resume h2,
+.portfolio h2 {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.25rem;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.resume h3,
+.portfolio h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.dates {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0.125rem 0 0.5rem;
+}
+
+.resume .entry,
+.portfolio .entry {
+  border-left: 0;
+  padding-left: 0;
+  margin-bottom: 1.25rem;
+}
+
+.resume--modern h2 {
+  border-bottom: 2px solid #0f172a;
+  color: #0f172a;
+}
+
+.chips {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.chips li {
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}

@@ -16,3 +16,12 @@ async function request(path, options) {
 export function getHealth() {
   return request("/health");
 }
+
+export async function generateResume(formData) {
+  const { generated } = await request("/resume", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
+  return generated;
+}

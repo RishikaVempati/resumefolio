@@ -1,19 +1,76 @@
 /**
- * Slice 1: proves the portfolio view reads the same object the resume does —
- * the spec's "both previews from the same form data". Sections are filled in
- * with slice 5.
+ * Slice 3: renders the generated content in portfolio form. The spec's four
+ * sections — About Me, Skills, Projects, Achievements — read from the same
+ * generated object the resume does, so moving between the two never regenerates.
  */
-export default function PortfolioPreview({ formData, onBack }) {
+export default function PortfolioPreview({ formData, generated, onBack }) {
+  const { personal } = formData;
+
+  if (!generated) {
+    return (
+      <main>
+        <button type="button" onClick={onBack}>
+          Back to resume
+        </button>
+        <p className="status">Nothing generated yet.</p>
+      </main>
+    );
+  }
+
   return (
     <main>
-      <h1>Portfolio preview</h1>
-      <p>About Me, Skills, Projects and Achievements are built in slice 5.</p>
+      <div className="toolbar">
+        <button type="button" onClick={onBack}>
+          Back to resume
+        </button>
+      </div>
 
-      <pre>{JSON.stringify(formData, null, 2)}</pre>
+      <article className="portfolio">
+        <header>
+          <h1>{personal.name}</h1>
+          {personal.title && <p className="role">{personal.title}</p>}
+        </header>
 
-      <button type="button" onClick={onBack}>
-        Back to resume
-      </button>
+        <section>
+          <h2>About Me</h2>
+          <p>{generated.about}</p>
+        </section>
+
+        {generated.skills.length > 0 && (
+          <section>
+            <h2>Skills</h2>
+            <ul className="chips">
+              {generated.skills.map((skill, index) => (
+                <li key={index}>{skill}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {generated.projects.length > 0 && (
+          <section>
+            <h2>Projects</h2>
+            {generated.projects.map((project, index) => (
+              <div className="entry" key={index}>
+                <h3>{project.name}</h3>
+                <p>{project.description}</p>
+                {project.tech && <p className="dates">{project.tech}</p>}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {generated.achievements.length > 0 && (
+          <section>
+            <h2>Achievements</h2>
+            <ul>
+              {generated.achievements.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </article>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import { createResumeRouter } from "./routes/resume.js";
 
 const PORT = process.env.PORT || 3001;
 
@@ -13,7 +14,13 @@ const allowedOrigins = process.env.CLIENT_ORIGIN
 
 const app = express();
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 // Resume form data with several dynamic sections is still small, but this bounds
 // what an oversized payload can do to the free-tier instance.
 app.use(express.json({ limit: "10mb" }));
@@ -26,6 +33,8 @@ app.get("/api/health", (req, res) => {
     apiKeyConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
   });
 });
+
+app.use("/api", createResumeRouter());
 
 // Global error handler. Every failure leaves as structured JSON so the frontend
 // never has to parse an HTML error page.
