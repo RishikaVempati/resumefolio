@@ -277,4 +277,4 @@ system instruction asks, and invents nothing.
 **Security note:** during this slice a live API key was briefly pasted into
 `.env.example`, which is tracked. It was moved to `.env` before any commit —
 `git log --all -S<key>` and `git grep` both return nothing, so it never entered
-history. The key was rotated afterwards.
+history. Rotating that key is still outstanding.
