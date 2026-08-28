@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "auto-resume-portfolio-builder",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -26,5 +26,8 @@
     "oxlint": "^1.79.0",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

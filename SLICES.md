@@ -605,3 +605,76 @@ budget stops retrying when attempts are slow.
 Planned: `AuthModal` with signup and login, `currentUser` in LocalStorage read via a lazy
 `useState` initialiser, `handleStartFlow` gating, and `handleAuthSuccess` consuming
 `pendingPage`.
+
+---
+
+## Slice 6 — Hardening and deployment config
+
+**Done means:** the live URL works end to end. **Config is done; the deploy itself needs
+Rakesh's Vercel and Render accounts.**
+
+### What was built
+
+| File | Purpose |
+|---|---|
+| `render.yaml` | Backend service: `rootDir: server`, health check at `/api/health`, env vars declared with `sync: false` so no secret is committed |
+| `vercel.json` | Frontend: Vite preset, `npm run build`, `dist` |
+| `server/cors.js` | The allow-list, extracted so it can be tested |
+| `server/cors.test.js` | Five tests for it |
+| `README.md` | Step-by-step deployment, and a pre-demo checklist |
+
+`engines: { node: ">=20" }` on both packages, so Render and Vercel do not pick an older
+runtime than the code assumes.
+
+**CORS moved into its own module.** Getting it wrong either breaks the deployed frontend
+or opens the API to any site on the internet, and neither is visible from reading the
+config. It now supports a comma-separated `CLIENT_ORIGIN`, so adding a preview URL needs
+no code change.
+
+### How it was tested
+
+```bash
+npm --prefix server test
+npm test
+npm run build
+
+CLIENT_ORIGIN=https://resumefolio.vercel.app npm --prefix server start
+
+curl -s -i -X OPTIONS http://localhost:3001/api/generate-resume \
+  -H "Origin: https://resumefolio.vercel.app" -H "Access-Control-Request-Method: POST"
+
+curl -s -i -X OPTIONS http://localhost:3001/api/generate-resume \
+  -H "Origin: https://evil.example" -H "Access-Control-Request-Method: POST"
+```
+
+### Result
+
+```
+client:  Tests 50 passed (50)
+server:  ℹ tests 34   ℹ pass 34   ℹ fail 0
+build:   ✓ built
+```
+
+Production CORS, both directions:
+
+```
+Origin: https://resumefolio.vercel.app  → 204, Access-Control-Allow-Origin: https://resumefolio.vercel.app
+Origin: https://evil.example            → 204, no Access-Control-Allow-Origin header
+```
+
+The second is the one that matters: with no allow-origin header the browser discards
+the response, so an unlisted site cannot read this API.
+
+### The trap worth naming
+
+If `CLIENT_ORIGIN` is not set on Render after the frontend deploys, every call is blocked
+by the browser as a CORS failure. The request never reaches the backend, so **the Render
+logs stay completely clean while the app is broken**. The README says this at the step
+where it happens rather than in a troubleshooting section.
+
+### Not done, and why
+
+- **The deploy itself.** Connecting Vercel and Render needs Rakesh's accounts; the
+  config, env var names and verification commands are ready for him to run.
+- **Demo video, and moving the 29 Kanban cards.** Both are his to do.
+- **The repository is still private** and must be made public before submission.

@@ -21,7 +21,7 @@ Built in deployable slices. Current: **slice 6 — hardening and deployment**.
 | 3 | `/api/generate-resume` + Gemini generation, with retry | ✅ |
 | 4 | `AuthModal`, LocalStorage sessions, `pendingPage` gating | ✅ |
 | 5 | Multiple templates + portfolio preview | ✅ |
-| 6 | Error handling, tests, deployment | ☐ |
+| 6 | Error handling, tests, deployment | ◐ config ready, deploy pending |
 
 ## Stack
 
@@ -69,6 +69,62 @@ curl -s http://localhost:3001/api/health
 
 Free tier, no card needed. Never paste a key into `.env.example` — that file is tracked
 and goes to GitHub.
+
+## Deploying
+
+Frontend on **Vercel**, backend on **Render**, as the spec's Deployment Architecture
+story describes. Both read from this one repository.
+
+### 1. Backend — Render
+
+1. New → Web Service → connect this repo
+2. **Root Directory:** `server`
+3. Build command `npm ci`, start command `npm start` (both already in `render.yaml`)
+4. Environment variables:
+
+   | Key | Value |
+   |---|---|
+   | `GEMINI_API_KEY` | your key from [AI Studio](https://aistudio.google.com/apikey) |
+   | `GEMINI_MODEL` | `gemini-3.5-flash-lite` |
+   | `CLIENT_ORIGIN` | the Vercel URL from step 2 — set this *after* the frontend exists |
+
+5. Confirm the deploy:
+
+   ```bash
+   curl -s https://<your-service>.onrender.com/api/health
+   # {"status":"ok","model":"gemini-3.5-flash-lite","apiKeyConfigured":true}
+   ```
+
+   `apiKeyConfigured: false` means the key is missing from the Render environment.
+
+### 2. Frontend — Vercel
+
+1. New Project → import this repo, root directory left at the repository root
+2. Framework preset **Vite**; build `npm run build`, output `dist` (already in `vercel.json`)
+3. Environment variable:
+
+   | Key | Value |
+   |---|---|
+   | `VITE_API_BASE_URL` | `https://<your-service>.onrender.com` |
+
+4. Deploy, then go back to Render and set `CLIENT_ORIGIN` to the Vercel URL. Without
+   it the browser blocks every API call as a CORS error — the request never reaches
+   the backend, so the Render logs will look completely clean while the app is broken.
+
+### 3. Check it end to end
+
+Open the Vercel URL, sign up, fill the form, generate. If generation fails, the
+message says whether retrying will help.
+
+## Before recording the demo
+
+- **Warm the backend.** Render's free tier spins down after ~15 minutes idle and takes
+  30–50s to wake. Hit `/api/health` first, or the first click of the demo is a long
+  wait on a blank screen.
+- **Mind the quota.** The Gemini free tier allows **20 requests per day, per model**.
+  A few rehearsals plus the recording can exhaust it. If it runs out, switching
+  `GEMINI_MODEL` gives a fresh allowance, because the quota is per model.
+- Sign out first, so the demo shows the auth modal.
 
 ## Known deviations from the spec
 

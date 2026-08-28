@@ -2,21 +2,15 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { createResumeRouter } from "./routes/resume.js";
+import { allowedOrigins } from "./cors.js";
 
 const PORT = process.env.PORT || 3001;
-
-// Vite picks the next free port when one is taken, so the dev server can land
-// anywhere in this range. CLIENT_ORIGIN carries the deployed Vercel URL.
-const DEV_ORIGINS = [5173, 5174, 5175, 5176].map((p) => `http://localhost:${p}`);
-const allowedOrigins = process.env.CLIENT_ORIGIN
-  ? [...DEV_ORIGINS, process.env.CLIENT_ORIGIN]
-  : DEV_ORIGINS;
 
 const app = express();
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: allowedOrigins(process.env),
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
   })
