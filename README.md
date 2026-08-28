@@ -1,55 +1,97 @@
 # resumefolio
 
-> Capstone project: **Auto Resume Portfolio Builder** (Generative AI, Intermediate).
+> Capstone: **Auto Resume + Portfolio Builder** (Vibe coding with Antigravity).
 
-Upload a resume PDF, get back a shareable portfolio web page generated from it.
+Sign up, fill in a structured form about yourself, and Google Gemini generates polished
+resume content from it. Preview it as a resume or as a portfolio, in a template you pick.
 
 ```
-PDF upload → text extraction → LLM structured parse → JSON → HTML template → shareable URL
+sign up → structured form → Gemini generates content → resume preview / portfolio preview
 ```
 
 ## Status
 
-Built in deployable slices. Current: **slice 3 — full schema and portfolio template**.
+Built in deployable slices. Current: **slice 0 — scaffold**.
 
 | # | Slice | State |
 |---|---|---|
-| 0 | FastAPI app, `/health`, upload page, Dockerfile | ✅ |
-| 1 | Upload → PDF text extraction | ✅ |
-| 2 | LLM parse behind a `ResumeParser` interface | ✅ |
-| 3 | Full schema + portfolio template | ☐ |
-| 4 | Validation, rate limiting, tests, CI | ☐ |
-| 5 | Demo video, docs | ☐ |
+| 0 | Vite React client + Express server, `/api/health` | ✅ |
+| 1 | `EMPTY_FORM` + page state machine (home/form/preview/portfolio) | ☐ |
+| 2 | `ResumeForm` — six sections, dynamic arrays | ☐ |
+| 3 | `/api/resume` + Gemini generation | ☐ |
+| 4 | `AuthModal`, LocalStorage sessions, `pendingPage` gating | ☐ |
+| 5 | Multiple templates + portfolio preview | ☐ |
+| 6 | Error handling, tests, deployment | ☐ |
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Frontend | React on Vite (`client/`) |
+| Backend | Node + Express (`server/`), routes under `/api` |
+| AI | Google Gemini, called only from the backend |
+| Config | dotenv |
+| Sessions | LocalStorage — no database |
+| Deploy | Frontend on Vercel, backend on Render |
 
 ## Run locally
 
-```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-cp .env.example .env          # fill in when slices 2+ need it
-.venv/bin/uvicorn app.main:app --reload
-```
-
-Then http://127.0.0.1:8000 — and `curl http://127.0.0.1:8000/health`.
-
-With Docker:
+Two terminals. Backend first:
 
 ```bash
-docker build -t resumefolio . && docker run -p 8000:8000 resumefolio
+cd server
+cp .env.example .env        # then paste your Gemini key into it
+npm install
+npm run dev                 # http://localhost:3001
 ```
 
-## Scope
+Frontend:
 
-The official estimate for this brief is ~20 hours. This is built in ~5. That is a
-deliberate trade: **one narrow vertical slice finished properly** beats a wide,
-half-working surface. Everything cut is listed below rather than hidden.
+```bash
+cd client
+npm install
+npm run dev                 # http://localhost:5173
+```
 
-### Known limitations
+Verify the two are talking:
 
-- **No accounts.** A portfolio link is the only handle on it — a user cannot return
-  to edit or delete their portfolio. Correct scope call here; wrong for a real product.
-- **Tailwind via Play CDN**, not a build step. Not intended for production traffic;
-  the fix is a real Tailwind build.
-- **Render free tier cold starts.** The service sleeps after ~15 min idle and takes
-  30–50s to wake. Fix is a paid instance.
-- **PDF only.** No DOCX, no plain text.
-- **No OCR.** `pdfplumber` reads embedded text; a scanned resume is rejected with a 422.
+```bash
+curl -s http://localhost:3001/api/health
+# {"status":"ok","model":"gemini-3.6-flash","apiKeyConfigured":true}
+```
+
+`apiKeyConfigured: false` means `server/.env` has no `GEMINI_API_KEY`.
+
+## Getting a Gemini API key
+
+1. Go to https://aistudio.google.com/apikey and sign in
+2. **Create API key**, pick or create a Google Cloud project
+3. Copy it into `server/.env` as `GEMINI_API_KEY`
+
+Free tier, no card needed. Never paste a key into `.env.example` — that file is tracked
+and goes to GitHub.
+
+## Known deviations from the spec
+
+- **Model.** The spec names `gemini-1.5-flash`. It returns
+  `404 models/gemini-1.5-flash is not found for API version v1beta` on a current key, so
+  this project uses **`gemini-3.6-flash`**, verified with a real call. The model is
+  configured through `GEMINI_MODEL`, not hardcoded, so changing it is a one-line edit.
+- Thinking will be set to `LOW` for generation. Measured on this key: default thinking
+  spent 314 thinking tokens and returned 503 after 34.9s under load, versus 1.0s and 50
+  tokens on `LOW`.
+
+## Known limitations
+
+- **LocalStorage "auth" is not real authentication.** No server-side session, no password
+  hashing, and anyone with the browser can read it. It satisfies the spec and is fine for
+  a capstone; it would be wrong for real users.
+- **No persistence.** Generated content lives in React state. A refresh loses it.
+- **Render free tier cold starts** — the backend sleeps after ~15 min idle and takes
+  30–50s to wake. Warm it before recording the demo.
+
+## History
+
+An earlier version of this repo implemented a different product — upload a PDF resume and
+extract its fields — built against a project brief that did not match the graded spec. It
+is preserved under the `pdf-approach-archived` tag.

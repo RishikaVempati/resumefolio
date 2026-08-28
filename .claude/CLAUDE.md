@@ -1,167 +1,163 @@
 # CLAUDE.md — Auto Resume Portfolio Builder
 
+## Where the requirements actually live
+
+The graded spec is the SkillWallet project page, not this file:
+
+https://myskillwallet.ai/dashboard/skillwallet/module/vibe-coding-with-antigravity-69e9dbc0a72b306d1be9a34c/projects/6a214e26774ac42acecf34de/-AUTO-RESUME-PORTFOLIO-BUILDER-6a91a00cb357fbb2c660f06b
+
+All 29 stories were read in full on 2026-08-28 and this file summarises them. **When the
+two disagree, the spec wins** — say so and stop rather than building from this file.
+
+An earlier version of this file described a completely different product (upload a PDF,
+extract text, parse it). Three slices were built against it before anyone checked it
+against the spec. That work is archived under the `pdf-approach-archived` tag and is not
+part of this project. Do not resurrect it.
+
 ## What this is
 
-A capstone project. Upload a resume PDF, get back a shareable portfolio web page generated from it.
-
-Single flow, end to end:
+A user signs up, fills in a structured form about themselves, and Gemini generates
+polished resume content from that form data. They preview it as a resume or as a
+portfolio, in a template they pick.
 
 ```
-PDF upload → text extraction → LLM structured parse → JSON → HTML template → shareable URL
+sign up → structured form → Gemini generates content → resume preview / portfolio preview
 ```
 
-## Hard constraints — read these before suggesting anything
+**There is no PDF upload and no resume parsing.** The user types their details in.
 
-- **Total budget is ~5 hours.** This is the dominant constraint. It outranks elegance, completeness, and every "while we're here" improvement.
-- The official scope estimate is 20 hours. **We are not building 20 hours of scope.** We are building one narrow vertical slice, finished properly. That tradeoff is deliberate and is documented in the README.
-- Deliverables: public GitHub repo + a recorded demo video for mentor review.
-- Every completed user story gets moved to `review` on the Kanban board as we go, not at the end.
+## The five functional requirements, verbatim
 
-## Build strategy — incremental deployable slices
+1. Register and log in through an **authentication modal with LocalStorage-based session
+   management**
+2. Collect **personal details, education, skills, projects, experience, and
+   certifications** via a structured form
+3. Generate resume content using the **Google Gemini API based on the submitted form data**
+4. Support **multiple resume templates with user-selectable designs**
+5. Provide **both a resume preview and a portfolio preview** from the same form data
 
-Work in slices. **Every slice must end with a running, demoable system.** Never leave the repo mid-refactor. If the clock ran out right now, whatever exists should be submittable.
+All five are mandatory. None is out of scope.
 
-| # | Slice | Done means |
-|---|---|---|
-| 0 | Skeleton deployed: FastAPI app, `/health`, static upload page, Dockerfile | Public URL returns 200 |
-| 1 | Upload → PDF text extraction → dump raw text on page (no LLM yet) | Upload a real resume, see its text |
-| 2 | LLM parse into a 3-field schema (name, email, summary) behind the parser interface | Real resume in, valid JSON out |
-| 3 | Full schema + real portfolio template | Output looks like a portfolio, not a debug dump |
-| 4 | Hardening: validation, 429 backoff, rate limiting, tests, CI | `pytest` green, CI passing |
-| 5 | Demo video, README, Kanban cards moved | Submitted |
+## The five pages
 
-**The cut line is after slice 2.** At that point the project is complete and submittable. Slices 3–5 are quality, not existence. If we are behind, we ship from the cut line rather than leaving slice 3 half-done.
+| Page | Contents |
+|---|---|
+| **Landing** | Navbar, Hero, Features, template gallery, Footer. "Get Started" triggers `AuthModal` if not authenticated |
+| **AuthModal** | Sign-up and login modes. On success, saves the user to LocalStorage, pre-fills the form, and redirects to the originally intended page |
+| **ResumeForm** | Six sections. Projects, experience and certifications are dynamic arrays with add/remove. Submits to the Express backend |
+| **ResumePreview** | AI content with the selected template applied. Switch templates, return to the form to edit, export, or go to the portfolio — **all without losing generated content** |
+| **PortfolioPreview** | Same form data in a portfolio layout: About Me, Skills, Projects, Achievements |
 
-Do not start a slice until the previous one is deployed and verified working.
-
-## Stack
+## Stack — dictated by the spec, not chosen by us
 
 | Layer | Choice |
 |---|---|
-| Backend | Python + FastAPI |
-| PDF extraction | `pdfplumber` — better layout handling than `pypdf` |
-| LLM | Gemini Flash / Flash-Lite via `google-genai`, Google AI Studio free tier |
-| Templating | Jinja2, server-rendered |
-| Styling | Tailwind via Play CDN — one script tag, no build step |
-| Storage | Supabase Postgres |
-| Tests | `pytest`, parameterized, using the stub parser |
-| Deploy | Docker container on Render free tier |
+| Frontend | **React.js** on **Vite** (the spec's CORS list, ports 5173–5176, is Vite's) |
+| Backend | **Node.js + Express**, `index.js` entry, routes under `/api`, port **3001** |
+| LLM | **Google Gemini**, called only from the backend |
+| Config | **dotenv**, `.env` inside `server/` |
+| Sessions | LocalStorage. No server-side auth, no database |
+| Deploy | Frontend on **Vercel**, backend on **Render** |
 
-Standard library and framework built-ins where possible. Adding a dependency is a decision worth naming out loud.
+Two workspaces: a frontend directory and a `server/` directory, each with its own
+`package.json`. Server deps: express, cors, dotenv.
 
-## Frontend — where design effort goes
+**Model id:** the spec says `gemini-1.5-flash`. **Do not use it without checking.**
+Verified on this project's key on 2026-08-28: `gemini-2.5-flash` 404s for new keys
+("no longer available to new users"), and `gemini-3.6-flash` works. Confirm against
+`ListModels` and a real call before wiring anything, and set `thinking_level` to LOW —
+default thinking cost 314 thinking tokens and timed out at 34.9s under load, versus
+1.0s and 50 tokens on LOW. The model id belongs in `GEMINI_MODEL`, not hardcoded.
 
-There are two frontends and they matter very unequally:
+Env vars: `GEMINI_API_KEY`, `GEMINI_MODEL`, `PORT`. The frontend's API base URL is its
+own env var so it can point at the deployed Render backend.
 
-| Surface | Who sees it | Effort |
+## Architecture the spec prescribes
+
+Not our decisions to make:
+
+- A **page-based state machine in `App.jsx`**: `home`, `form`, `preview`, `portfolio`
+- A shared **`EMPTY_FORM`** exported from `App.jsx`, so every page agrees on the data shape
+- `handleStartFlow` gates page access behind authentication
+- `handleAuthSuccess` pre-fills form data and redirects to the intended page
+- `handleSelectTemplate` carries the landing-page template choice into the form
+- **`pendingPage`** holds the originally intended destination across login
+- Backend resume logic in **`routes/resume.js`**, mounted under `/api`; `index.js` is the
+  Express entry point
+- **CORS** allowing `localhost:5173`–`5176`, plus the deployed Vercel URL in production
+- JSON payloads up to **10MB**
+- **`/api/health`** returning the model name and `apiKeyConfigured` status
+- A **global error handler** in `index.js` returning structured JSON with `error` and
+  `details` fields; input validation in the resume route before calling Gemini
+- Performance: lazy `useState` initialiser for `currentUser` to avoid repeated
+  LocalStorage reads; functional `setState` (`prev => ({...prev, ...})`) to avoid stale state
+
+## Test cases the spec names
+
+| ID | Input | Expected |
 |---|---|---|
-| Uploader page | The user, for ten seconds, once | Minimal. File input, spinner, error state. |
-| **Generated portfolio** | Everyone the user shares it with | **This is the product. Design effort goes here.** |
+| TC01 | Valid form submission, all fields | AI-generated resume shown in preview |
+| TC02 | Login with valid credentials | User pre-filled in form, redirected to form page |
+| TC03 | "Get Started" without login | Auth modal opens in signup mode |
+| TC04 | Select template on landing page | Form opens with that template in state |
+| TC05 | Health check call | JSON with model name and `apiKeyConfigured` |
+| TC06 | Submit with missing required fields | Validation error handled gracefully |
+| TC07 | Preview → portfolio | `PortfolioPreview` renders from the same form data |
 
-A reviewer spends seconds on the uploader and minutes on the portfolio output. Do not spend time making the uploader pretty.
+Unit tests cover `ResumeForm` state updates on input change, and the Express resume route's
+Gemini call structure and response handling.
 
-No JS framework. There is almost no client state, and React with default styling looks worse than clean HTML with good typography. Design quality comes from typography, spacing, and hierarchy — not from the framework.
+## Build strategy — incremental, always demoable
 
-For the portfolio template: one strong typeface pairing, generous whitespace, clear hierarchy, one accent color. That is the whole brief.
+Every slice ends with something that runs. Never leave the repo mid-refactor.
 
-Known tradeoff to document in the README: the Tailwind Play CDN is not intended for production traffic. The fix is a proper build step. Naming this is better than hiding it.
+| # | Slice | Done means |
+|---|---|---|
+| 0 | Vite React app + Express server, `/api/health` | Both dev servers run; health reports model and `apiKeyConfigured` |
+| 1 | `EMPTY_FORM` + page state machine, all four views | Click through home → form → preview → portfolio |
+| 2 | `ResumeForm`, six sections, dynamic arrays | Fill it, submit, data reaches `App.jsx` |
+| 3 | `/api/resume` + real Gemini generation | Real form data in, generated content in preview |
+| 4 | `AuthModal`, LocalStorage, `pendingPage` gating | Sign up, land on the page you originally wanted |
+| 5 | Multiple templates + portfolio preview | Switch template, both previews render from one form |
+| 6 | Error handling, tests (TC01–TC07), deploy, README | Tests green, Vercel + Render live |
 
-## Architecture decisions already made
+Do not start a slice until the previous one runs.
 
-**The parser goes behind an interface.** Two implementations from slice 2 onward:
+## Kanban and deliverables
 
-```python
-class ResumeParser(Protocol):
-    def parse(self, text: str) -> Resume: ...
-```
-
-- `GeminiParser` — real API call
-- `StubParser` — returns a fixed fielded response
-
-Non-negotiable. Tests run without a network call, and the demo survives a rate limit or dead key mid-recording.
-
-**Storage goes behind two functions**, `save_portfolio` and `get_portfolio`. No Supabase calls scattered through route handlers. Same reasoning as the parser: swappable and mockable.
-
-**Supabase is Postgres only.** No auth, no storage buckets, no realtime. Those are all out of scope.
-
-Storage is Supabase rather than SQLite because Render's free tier has an ephemeral filesystem — a redeploy or restart would wipe local SQLite and silently break every portfolio URL already shared. That failure mode is unacceptable when a mentor may click a link days after watching the demo.
-
-**Endpoints:**
-- `POST /api/resumes` — upload and parse
-- `GET  /p/{token}` — rendered portfolio, public
-- `GET  /health`
-
-**Portfolio tokens must be random and unguessable.** Use `secrets.token_urlsafe(12)`. Never sequential integers — `/p/1`, `/p/2` lets anyone enumerate every resume ever uploaded, exposing real names, emails, and work history.
-
-**Schema grows with the slices.** Slice 2 is three fields. Slice 3 expands to `name, contact, summary, experience[], education[], skills[], projects[]`. Do not build the full schema early.
-
-## Access model
-
-No accounts, no login. A user hits the app URL, uploads a PDF, receives a portfolio link, and shares it. That link is the distribution mechanism.
-
-The consequence: a user cannot return to edit, update, or delete their portfolio. This is the correct scope call for the capstone and must be stated as a known limitation in the README.
-
-**Render free tier cold starts:** services spin down after ~15 minutes idle and take 30–50 seconds to wake. Warm the URL before recording the demo, and note the limitation in the README with the paid tier as the fix.
-
-## Explicitly out of scope
-
-Do not build these, do not suggest them, do not leave hooks for them:
-
-- User accounts, auth, sessions
-- Multiple portfolio templates or a template picker
-- An editor for the parsed resume
-- Custom domains
-- Resume file formats other than PDF
-- Analytics, admin panels, any dashboard
-- Job description matching or ATS scoring
-- Microservices, message queues, or any distributed anything
-- A JS frontend framework or any frontend build step
-
-If a request seems to need one of these, say so and stop rather than building it.
-
-## Future features — only if slices 0–5 are all done with real time to spare
-
-In priority order. Pick one, complete it, stop.
-
-1. **DOCX input** alongside PDF. Highest value per hour, isolated change at the extraction layer.
-2. **Download portfolio as static HTML.** Small, and makes the demo stronger.
-3. **Second portfolio template** with a picker.
-4. **Inline editing** of parsed fields before rendering. Biggest of the four, real state management.
-
-Anything here gets its own branch and must not destabilize a working slice.
-
-## Relationship to my global CLAUDE.md
-
-My user-level `CLAUDE.md` still applies in full — simplicity first, surgical diffs, verify don't assert, tests for new functions, no invented APIs, no commits unless asked.
-
-Two places this file is deliberately stricter, and this file wins:
-
-- **Scope refusals are harder here.** The out-of-scope list is absolute for the duration of this project, even if adding something would be trivial.
-- **Ship over polish at the cut line.** If slice 2 works and time is short, stop. Do not start slice 3 to make it nicer.
-
-Flag it if anything in this file seems to contradict the global agreement in some way I have not anticipated.
+29 tasks, all in To-Do. Move each to review as it is finished, not at the end. The Overview
+tab wants a **demo link** and a **GitHub link** — both graded, along with the demo video.
 
 ## Working notes
 
 - Tell me the current slice number at the start of each response.
-- Before writing code for a slice, state the plan as one line per step with its verification, then run it.
-- Verify by actually running things. "Deployed and working" means you hit the URL.
-- Never commit the API key, Supabase credentials, `.env`, or any real resume PDF used for testing. Ship a `.env.example`.
-- Always give me the curl commands to run manually, so I can execute them myself and
-  understand what is happening. Don't just report that you verified something — hand me
-  the command that lets me verify it too.
+- Before writing code for a slice, state the plan as one line per step with its
+  verification, then run it.
+- Verify by actually running things. "Working" means you hit the URL or clicked the button.
+- **A slice is not verified until a real request has left the machine.** Unit tests against
+  a fake passed the entire time a wrong Gemini model id was breaking every real call.
+- Never commit the API key, `.env`, or real personal data. Ship a `.env.example` with empty
+  values — `.env.example` is tracked and goes to GitHub, so a key pasted there is a leak.
+- Always give me the curl commands to run manually. Hand me the command, don't just report
+  that you ran it.
 
 ## Git workflow
 
-- **One branch per slice.** Branch off `main` before writing any code for a slice:
-  `slice-1-pdf-extraction`, `slice-2-llm-parse`, and so on.
-- **Commit frequently, and never amend a commit I have already seen.** Each slice gets
-  its own new commit (or several). Do not fold new work into an existing commit.
-- **A branch reaches `main` only with my explicit approval.** Push the branch, tell me
-  what is on it, then wait. Do not merge or open-and-merge a PR on your own.
-- **Open a PR for every branch, with a real description.** There is no CI on this
-  project, so the PR body is the only review artifact. It must state: what changed and
-  why, how it was tested, the actual results (paste real output, not a summary), and
-  any known limitations or follow-ups. Open the PR as soon as the branch is pushed —
-  do not wait to be asked. Opening a PR is not merging; the approval rule above still
-  applies.
+- **One branch per slice**, off `main`: `slice-0-scaffold`, `slice-1-state-machine`, and so on.
+- Commit frequently. Never amend a commit I have already seen.
+- **A branch reaches `main` only with my explicit approval.** Push, tell me what is on it, wait.
+- **Open a PR for every branch, with a real description**: what changed and why, how it was
+  tested, actual pasted output, and known limitations. There is no CI, so the PR body is the
+  only review artifact. Open it as soon as the branch is pushed. Opening a PR is not merging.
+
+## Relationship to my global CLAUDE.md
+
+My user-level `CLAUDE.md` applies in full — simplicity first, surgical diffs, verify don't
+assert, tests for new functions, no invented APIs, no commits unless asked.
+
+Where this file is stricter, this file wins:
+
+- **The spec outranks both files.** If a requirement here contradicts the SkillWallet page,
+  the SkillWallet page is right.
+- **No inventing scope, and no cutting mandatory scope.** All five functional requirements
+  ship. If time runs short, say so — do not quietly drop one.
