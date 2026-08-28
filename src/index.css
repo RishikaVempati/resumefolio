@@ -1,8 +1,32 @@
+/*
+ * One accent colour, one type pairing, generous whitespace.
+ *
+ * Classic and Modern render identical markup; everything that distinguishes
+ * them lives under .resume--classic / .resume--modern, so a third template is a
+ * block of CSS rather than a second component.
+ */
+
 :root {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
-  color: #1e293b;
-  background: #f8fafc;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --page: #f6f7fb;
+  --card: #ffffff;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --danger: #b91c1c;
+
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  font-family: var(--sans);
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--page);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -10,81 +34,232 @@ body {
 }
 
 main {
-  max-width: 40rem;
+  max-width: 44rem;
   margin: 0 auto;
-  padding: 3rem 1.5rem;
+  padding: 2.5rem 1.5rem 5rem;
 }
 
-dt {
-  font-weight: 600;
-  color: #64748b;
+main.wide {
+  max-width: 62rem;
 }
 
-dd {
+h1 {
+  font-size: clamp(1.85rem, 1.2rem + 2.2vw, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   margin: 0 0 0.75rem;
 }
 
-[role="alert"] {
-  color: #b91c1c;
-}
+/* ─── header ─────────────────────────────────────────────── */
 
-header {
+/* Scoped to the app bar. A bare `header` selector also caught the resume and
+   portfolio headers, which are <header> elements too, and flexed them sideways. */
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 40rem;
+  max-width: 62rem;
   margin: 0 auto;
-  padding: 1rem 1.5rem 0;
-  color: #64748b;
+  padding: 1.25rem 1.5rem 0;
   font-size: 0.875rem;
+  color: var(--muted);
 }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.signed-in {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ─── controls ───────────────────────────────────────────── */
 
 button {
   font: inherit;
-  padding: 0.5rem 1rem;
-  margin: 0 0.5rem 0.5rem 0;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  background: #fff;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--ink);
   cursor: pointer;
 }
 
+button:hover {
+  border-color: #cbd5e1;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 button[aria-pressed="true"] {
-  border-color: #0f172a;
-  background: #0f172a;
+  background: var(--ink);
+  border-color: var(--ink);
   color: #fff;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  padding: 0.7rem 1.4rem;
+  font-weight: 500;
+}
+
+.link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.template-switch {
+  display: inline-flex;
+  gap: 0.375rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.status {
+  color: var(--muted);
+}
+
+.error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: var(--danger);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* ─── landing ────────────────────────────────────────────── */
+
+.hero {
+  padding: 2rem 0 1rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 1.0625rem;
+  max-width: 34rem;
+  margin: 0 0 1.75rem;
+}
+
+.section-title {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 3rem 0 1rem;
 }
 
 .templates {
   list-style: none;
   padding: 0;
+  margin: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 }
 
 .templates button {
   display: grid;
-  gap: 0.25rem;
-  text-align: left;
+  gap: 0.5rem;
   width: 100%;
+  text-align: left;
+  padding: 1rem;
+  height: 100%;
 }
 
-pre {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  padding: 1rem;
-  overflow: auto;
-  max-height: 20rem;
-  font-size: 0.8125rem;
+.templates .blurb {
+  font-size: 0.875rem;
+  color: var(--muted);
 }
+
+.templates button[aria-pressed="true"] .blurb {
+  color: #cbd5e1;
+}
+
+/* Miniature of each layout, so the choice means something before generating. */
+.swatch {
+  display: block;
+  height: 3.5rem;
+  border-radius: 0.375rem;
+  background: var(--page);
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+}
+
+.swatch__rule {
+  display: block;
+  height: 3px;
+  width: 2.5rem;
+  background: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.swatch__line {
+  display: block;
+  height: 3px;
+  background: #cbd5e1;
+  margin-bottom: 0.3rem;
+}
+
+.swatch__line--short {
+  width: 60%;
+}
+
+.swatch--classic {
+  text-align: center;
+}
+
+.swatch--classic .swatch__rule {
+  margin-inline: auto;
+  background: var(--ink);
+}
+
+.swatch--classic .swatch__line--short {
+  margin-inline: auto;
+}
+
+/* ─── form ───────────────────────────────────────────────── */
 
 fieldset {
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--card);
   margin: 0 0 1rem;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
 legend {
@@ -95,7 +270,7 @@ legend {
 label {
   display: grid;
   gap: 0.25rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.875rem;
 }
 
 label > span {
@@ -106,19 +281,27 @@ label > span {
 input,
 textarea {
   font: inherit;
-  padding: 0.5rem;
+  padding: 0.6rem 0.7rem;
   border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  background: #fff;
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: inherit;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
 }
 
 abbr {
-  color: #b91c1c;
+  color: var(--danger);
   text-decoration: none;
 }
 
 .entry {
-  border-left: 2px solid #e2e8f0;
+  border-left: 2px solid var(--line);
   padding-left: 1rem;
   margin-bottom: 1rem;
 }
@@ -131,119 +314,287 @@ abbr {
 
 .actions {
   margin-top: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
-.toolbar {
-  margin-bottom: 1.5rem;
+/* ─── resume, shared ─────────────────────────────────────── */
+
+.resume {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 3rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
-.status {
-  color: #64748b;
-}
-
-.error {
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #991b1b;
-  border-radius: 0.5rem;
-  padding: 1rem;
-}
-
-.resume,
-.portfolio {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 2rem;
-}
-
-.resume h1,
-.portfolio h1 {
+.resume__header h1 {
   margin: 0;
 }
 
-.role {
-  margin: 0.25rem 0;
-  color: #475569;
-}
-
-.contact {
-  color: #64748b;
+.resume__contact {
+  color: var(--muted);
   font-size: 0.875rem;
-  margin: 0 0 1.5rem;
+  margin: 0.25rem 0 0;
 }
 
-.resume h2,
-.portfolio h2 {
-  font-size: 0.8125rem;
+.resume h2 {
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 0.25rem;
-  margin: 1.75rem 0 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
 }
 
-.resume h3,
-.portfolio h3 {
+.resume section {
+  margin-bottom: 1.75rem;
+}
+
+.resume h3 {
   font-size: 1rem;
   margin: 0;
 }
 
-.dates {
-  color: #64748b;
-  font-size: 0.875rem;
-  margin: 0.125rem 0 0.5rem;
-}
-
-.resume .entry,
-.portfolio .entry {
-  border-left: 0;
-  padding-left: 0;
+.record {
   margin-bottom: 1.25rem;
 }
 
+.record__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.record__dates,
+.record__org {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0.1rem 0 0.4rem;
+  white-space: nowrap;
+}
+
+.record__org {
+  white-space: normal;
+}
+
+.resume ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.resume li {
+  margin-bottom: 0.25rem;
+}
+
+.resume .plain {
+  list-style: none;
+  padding: 0;
+}
+
+/* ─── Modern: two columns, accent rules ──────────────────── */
+
+.resume--modern .resume__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.resume--modern .resume__body {
+  display: grid;
+  grid-template-columns: 1fr 15rem;
+  gap: 2.5rem;
+}
+
 .resume--modern h2 {
-  border-bottom: 2px solid #0f172a;
-  color: #0f172a;
+  color: var(--accent);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.3rem;
+}
+
+.resume--modern .resume__aside .plain li {
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9375rem;
+}
+
+/* ─── Classic: one centred serif column ──────────────────── */
+
+.resume--classic {
+  font-family: var(--serif);
+  padding: 3.5rem 4rem;
+}
+
+.resume--classic .resume__header {
+  text-align: center;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.resume--classic h1 {
+  letter-spacing: 0.02em;
+}
+
+.resume--classic .resume__body {
+  display: block;
+}
+
+.resume--classic h2 {
+  font-family: var(--sans);
+  text-align: center;
+  color: var(--ink);
+  letter-spacing: 0.14em;
+  margin-bottom: 1rem;
+}
+
+.resume--classic .resume__aside {
+  margin-top: 2rem;
+}
+
+.resume--classic .plain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  justify-content: center;
+}
+
+/* ─── portfolio ──────────────────────────────────────────── */
+
+.portfolio {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.portfolio__hero {
+  background: linear-gradient(135deg, #1e1b4b, #4f46e5);
+  color: #fff;
+  padding: 4rem 3rem;
+}
+
+.portfolio__available {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.15);
+  font-size: 0.8125rem;
+}
+
+.portfolio__hero h1 {
+  margin: 0 0 1rem;
+}
+
+.portfolio__hero em {
+  font-style: normal;
+  color: #c7d2fe;
+}
+
+.portfolio__tagline {
+  margin: 0;
+  max-width: 42rem;
+  color: #e0e7ff;
+  font-size: 1.0625rem;
+}
+
+.portfolio__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 1.75rem 0 0;
+  font-size: 0.9375rem;
+  color: #c7d2fe;
+}
+
+.portfolio__links a {
+  color: #fff;
+}
+
+.portfolio__section {
+  padding: 2.5rem 3rem;
+  border-top: 1px solid var(--line);
+}
+
+.portfolio__section h2 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.portfolio__about {
+  margin: 0;
+  max-width: 44rem;
+  font-size: 1.0625rem;
 }
 
 .chips {
   list-style: none;
   padding: 0;
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: 0.5rem;
 }
 
 .chips li {
-  background: #f1f5f9;
+  background: var(--accent-soft);
+  color: var(--accent);
   border-radius: 999px;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.85rem;
   font-size: 0.875rem;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.signed-in {
-  color: #0f172a;
   font-weight: 500;
 }
 
-.link {
-  border: 0;
-  background: none;
-  padding: 0;
-  margin: 0;
-  color: #4338ca;
-  text-decoration: underline;
-  cursor: pointer;
-  font: inherit;
+.cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
 }
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  padding: 1.25rem;
+  background: var(--page);
+}
+
+.card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.card p {
+  margin: 0;
+  color: #334155;
+  font-size: 0.9375rem;
+}
+
+.card__tech {
+  margin-top: 0.6rem !important;
+  color: var(--muted) !important;
+  font-size: 0.8125rem !important;
+}
+
+.achievements {
+  margin: 0;
+  padding-left: 1.1rem;
+  max-width: 44rem;
+}
+
+.achievements li {
+  margin-bottom: 0.4rem;
+}
+
+/* ─── auth modal ─────────────────────────────────────────── */
 
 .modal-backdrop {
   position: fixed;
@@ -258,8 +609,8 @@ abbr {
   position: relative;
   width: 100%;
   max-width: 24rem;
-  background: #fff;
-  border-radius: 0.75rem;
+  background: var(--card);
+  border-radius: 0.875rem;
   padding: 1.75rem;
   box-shadow: 0 20px 40px rgb(15 23 42 / 0.25);
 }
@@ -271,7 +622,7 @@ abbr {
 
 .modal-subtitle {
   margin: 0.375rem 0 1.25rem;
-  color: #64748b;
+  color: var(--muted);
   font-size: 0.875rem;
 }
 
@@ -285,7 +636,6 @@ abbr {
   line-height: 1;
   color: #94a3b8;
   padding: 0.25rem 0.5rem;
-  margin: 0;
 }
 
 .auth-tabs {
@@ -299,7 +649,6 @@ abbr {
 }
 
 .auth-tabs button {
-  margin: 0;
   border: 0;
   background: none;
   border-radius: 0.375rem;
@@ -307,22 +656,35 @@ abbr {
 }
 
 .auth-tabs button[aria-selected="true"] {
-  background: #0f172a;
+  background: var(--ink);
   color: #fff;
 }
 
 .modal .primary {
   width: 100%;
-  background: #4f46e5;
-  border-color: #4f46e5;
-  color: #fff;
-  margin: 0.5rem 0 0;
-  padding: 0.625rem;
+  margin-top: 0.5rem;
 }
 
 .modal-footer {
   margin: 1rem 0 0;
   text-align: center;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--muted);
+}
+
+@media (max-width: 46rem) {
+  .resume,
+  .resume--classic {
+    padding: 1.75rem;
+  }
+
+  .resume--modern .resume__body {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .portfolio__hero,
+  .portfolio__section {
+    padding: 2rem 1.5rem;
+  }
 }
