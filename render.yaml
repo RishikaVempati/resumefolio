@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: resumefolio
-    runtime: docker
-    plan: free
-    healthCheckPath: /health

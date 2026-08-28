@@ -1,11 +1,7 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-*.egg-info/
-.pytest_cache/
-.ruff_cache/
+# Node
+node_modules/
+dist/
+*.log
 
 # Secrets — never commit
 .env
@@ -13,10 +9,6 @@ venv/
 !.env.example
 *.pem
 *service-account*.json
-
-# Test fixtures may contain real resumes
-samples/
-*.pdf
 
 # OS / editor
 .DS_Store
